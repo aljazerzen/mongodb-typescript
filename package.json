@@ -1,0 +1,23 @@
+{
+  "name": "mongo-typescript",
+  "version": "1.0.0",
+  "description": "Define Mongoose schemas with TypeScript classes",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "aljazerzen",
+  "license": "ISC",
+  "dependencies": {
+    "@types/mongodb": "^3.1.4",
+    "class-transformer": "^0.1.9",
+    "mongodb": "3.1.4",
+    "reflect-metadata": "^0.1.12"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.2",
+    "jest": "^23.5.0",
+    "ts-jest": "^23.1.4",
+    "typescript": "^3.0.3"
+  }
+}
