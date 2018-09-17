@@ -81,6 +81,34 @@ describe('basic', () => {
     expect(saved).toHaveProperty('_id');
   });
 
+  test('update', async () => {
+    const user = await userRepo.findOne();
+
+    expect(user).not.toBeNull();
+    user.age = Math.floor(Math.random() * 30);
+    
+    await userRepo.update(user);
+
+    const saved = await userRepo.findById(user._id);
+    expect(saved).toHaveProperty('age', user.age);
+  });
+
+  test('save', async () => {
+    const user = new User();
+    user.name = 'ben';
+    user.age = 15;
+    await userRepo.save(user);
+
+    expect(user._id).not.toBeUndefined();
+    const initialUserId = user._id;
+
+    user.age = Math.floor(Math.random() * 30);
+    await userRepo.save(user);
+
+    const saved = await userRepo.findById(user._id);
+    expect(saved).toHaveProperty('_id', initialUserId);
+  });
+
   test('proper hydration', async () => {
 
     const saved = await userRepo.findOne();

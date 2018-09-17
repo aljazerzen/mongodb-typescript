@@ -28,6 +28,18 @@ export class Repository<T extends Entity> {
     entity._id = res.insertedId;
   }
 
+  async update(entity: T) {
+    const plain = this.dehydrate(entity);
+    await this.collection.updateOne({ _id: entity._id }, { $set: plain });
+  }
+
+  async save(entity: T) {
+    if (!entity._id)
+      await this.insert(entity);
+    else
+      await this.update(entity);
+  }
+
   async findOne(query?: FilterQuery<T>): Promise<T> {
     return this.hydrate(await this.collection.findOne(query));
   }
@@ -61,7 +73,7 @@ export class Repository<T extends Entity> {
       if (plain[ref.name]) {
         entity[ref.id] = entity[ref.name]._id;
         plain[ref.id] = plain[ref.name]._id;
-        
+
         delete plain[ref.name];
       }
     }

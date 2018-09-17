@@ -28,7 +28,7 @@ export function prop(typeFunction?, refId?: string) {
     if (targetType === ObjectId) {
       // ObjectId workaround
       Type(() => String)(target, propertyKey);
-      Transform(val => new ObjectId(val), { toClassOnly: true })(target, propertyKey);
+      Transform(val => new ObjectId(val), { toClassOnly: false })(target, propertyKey);
 
     } else {
 
