@@ -86,7 +86,7 @@ describe('basic', () => {
 
     expect(user).not.toBeNull();
     user.age = Math.floor(Math.random() * 30);
-    
+
     await userRepo.update(user);
 
     const saved = await userRepo.findById(user._id);
@@ -128,6 +128,18 @@ describe('basic', () => {
 
     expect(users).toHaveLength(2);
     users.forEach(user => expect(user).toHaveProperty('name', 'tom'));
+  });
+
+  test('count', async () => {
+    const count = await userRepo.count();
+
+    const user = new User();
+    user.name = 'tina';
+    user.age = 21;
+    await userRepo.save(user);
+
+    const newCount = await userRepo.count();
+    expect(newCount).toBe(count + 1);
   });
 
 });

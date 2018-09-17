@@ -63,6 +63,20 @@ export class Repository<T extends Entity> {
     entity[ref.name] = await this.findById(entity[ref.id]);
   }
 
+  /**
+   * Gets the number of documents matching the filter.
+   * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#estimatedDocumentCount
+   * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#countDocuments
+   * @param estimate whether estimatedDocumentCount or countDocuments will be called.
+   * @returns integer
+   */
+  async count(query?: FilterQuery<T>, estimate = true) {
+    if (estimate)
+      return this.collection.estimatedDocumentCount(query);
+    else
+      return this.collection.countDocuments(query);
+  }
+
   dehydrate(entity: T): Object {
     const refs = Reflect.getMetadata('mongo:refs', this.Type.prototype) || {};
 
