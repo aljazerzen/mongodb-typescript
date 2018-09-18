@@ -1,9 +1,8 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, entity, prop, Repository } from '../src';
+import { Entity, prop, Repository } from '../src';
 import { clean, close, connect } from './mongo';
 
-@entity('user')
 class User implements Entity {
 
   @prop()
@@ -31,7 +30,7 @@ let userRepo: UserRepo
 
 beforeAll(async () => {
   client = await connect();
-  userRepo = new UserRepo(User, client);
+  userRepo = new UserRepo(User, client, 'users');
 });
 
 describe('basic', () => {

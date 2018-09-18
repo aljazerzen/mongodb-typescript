@@ -1,5 +1,5 @@
 import { clean, connect } from "./mongo";
-import { prop, Entity, entity, Repository } from "../src";
+import { prop, Entity, Repository, nested } from "../src";
 import { MongoClient, ObjectId } from "mongodb";
 
 class Settings {
@@ -11,7 +11,6 @@ class Article {
   @prop() title: string;
 }
 
-@entity('user')
 class User implements Entity {
 
   @prop()
@@ -20,10 +19,10 @@ class User implements Entity {
   @prop()
   name: string;
 
-  @prop(() => Article)
+  @nested(() => Article)
   articles: Article[];
 
-  @prop(() => Settings)
+  @nested(() => Settings)
   settings: Settings;
 }
 
@@ -32,7 +31,7 @@ let userRepo: Repository<User>;
 
 beforeAll(async () => {
   client = await connect();
-  userRepo = new Repository<User>(User, client);
+  userRepo = new Repository<User>(User, client, 'users');
 });
 
 describe('nested objects', () => {

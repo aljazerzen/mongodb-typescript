@@ -1,8 +1,7 @@
 import { clean, connect } from "./mongo";
-import { entity, Entity, prop, Repository } from "../src";
+import { Entity, prop, Repository, referenced } from "../src";
 import { MongoClient, ObjectId } from "mongodb";
 
-@entity('user')
 class User implements Entity {
   @prop()
   _id: ObjectId;
@@ -11,7 +10,6 @@ class User implements Entity {
   name: string;
 }
 
-@entity('page')
 class Page implements Entity {
   @prop()
   _id: ObjectId;
@@ -19,7 +17,7 @@ class Page implements Entity {
   @prop()
   text: string;
 
-  @prop(() => User, 'userId')
+  @referenced(() => User, 'userId')
   user: User;
 
   @prop()
@@ -31,8 +29,8 @@ let userRepo: Repository<User>, pageRepo: Repository<Page>;
 
 beforeAll(async () => {
   client = await connect();
-  userRepo = new Repository<User>(User, client);
-  pageRepo = new Repository<Page>(Page, client);
+  userRepo = new Repository<User>(User, client, 'users');
+  pageRepo = new Repository<Page>(Page, client, 'pages');
 });
 
 describe('referenced objects', () => {

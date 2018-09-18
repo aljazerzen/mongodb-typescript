@@ -15,11 +15,8 @@ export class Repository<T extends Entity> {
    */
   collection: MongoCollection<T>;
 
-  constructor(protected Type: ClassType<T>, mongo: MongoClient) {
-    const name = Reflect.getMetadata('mongo:collection', Type);
-    if (!name)
-      throw new Error('you cannot create repository for object that doesn\'t have @entity decorator');
-    this.collection = mongo.db().collection(name);
+  constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string) {
+    this.collection = mongo.db().collection(collection);
   }
 
   async insert(entity: T) {
@@ -40,11 +37,11 @@ export class Repository<T extends Entity> {
       await this.update(entity);
   }
 
-  async findOne(query?: FilterQuery<T>): Promise<T> {
-    return this.hydrate(await this.collection.findOne(query));
+  async findOne(query: FilterQuery<T> = {}): Promise<T | null> {
+    return this.hydrate(await this.collection.findOne<Object>(query));
   }
 
-  async findById(_id: ObjectId): Promise<T> {
+  async findById(_id: ObjectId): Promise<T | null> {
     return this.findOne({ _id });
   }
 
@@ -60,7 +57,7 @@ export class Repository<T extends Entity> {
     if (ref.typeFunction().prototype !== this.Type.prototype)
       throw new Error(`incompatible repository: expected ${ref.typeFunction().name}, got ${this.Type.name}`);
 
-    entity[ref.name] = await this.findById(entity[ref.id]);
+    (entity as any)[ref.name] = await this.findById((entity as any)[ref.id] as ObjectId);
   }
 
   /**
@@ -80,12 +77,12 @@ export class Repository<T extends Entity> {
   dehydrate(entity: T): Object {
     const refs = Reflect.getMetadata('mongo:refs', this.Type.prototype) || {};
 
-    const plain = classToPlain(entity);
+    const plain = classToPlain(entity) as any;
 
     for (let name in refs) {
       const ref: Ref<any> = refs[name];
       if (plain[ref.name]) {
-        entity[ref.id] = entity[ref.name]._id;
+        (entity as any)[ref.id] = (entity as any)[ref.name]._id;
         plain[ref.id] = plain[ref.name]._id;
 
         delete plain[ref.name];
@@ -94,7 +91,7 @@ export class Repository<T extends Entity> {
     return plain;
   }
 
-  hydrate(plain: Object) {
-    return plainToClass<T, Object>(this.Type, plain);
+  hydrate(plain: Object | null) {
+    return plain ? plainToClass<T, Object>(this.Type, plain) : null;
   }
 }
