@@ -21,7 +21,7 @@ class User implements Entity {
 
 class UserRepo extends Repository<User> {
   findAllByName(name: string) {
-    return this.find({ name });
+    return this.find({ name }).toArray();
   }
 }
 

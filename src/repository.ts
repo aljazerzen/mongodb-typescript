@@ -12,8 +12,13 @@ export class Repository<T extends Entity> {
 
   /**
    * Underlying mongodb collection (use with caution)
+   * any of methods from this will not return hydrated objects
    */
-  collection: MongoCollection<T>;
+  collection: MongoCollection;
+
+  get c(): MongoCollection {
+    return this.collection;
+  }
 
   constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string) {
     this.collection = mongo.db().collection(collection);
@@ -45,9 +50,12 @@ export class Repository<T extends Entity> {
     return this.findOne({ _id });
   }
 
-  async find(query?: FilterQuery<T>) {
-    const plain = await this.collection.find(query).toArray();
-    return plainToClass<T, any[]>(this.Type, plain);
+  /**
+   * calls mongodb.find function and returns its cursor with attached map function that hydrates results
+   * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
+   */
+  find(query?: FilterQuery<T>) {
+    return this.collection.find(query).map(doc => this.hydrate(doc));
   }
 
   async populate<S extends Entity>(Type: ClassType<S>, entity: S, refName: string) {
