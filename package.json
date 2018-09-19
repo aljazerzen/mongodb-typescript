@@ -1,6 +1,6 @@
 {
   "name": "mongodb-typescript",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Define MongoDB entities with TypeScript classes",
   "main": "lib/index.js",
   "files": [
@@ -12,6 +12,7 @@
   },
   "author": "aljazerzen",
   "license": "ISC",
+  "repository": "https://github.com/aljazerzen/mongodb-typescript.git",
   "dependencies": {
     "@types/mongodb": "^3.1.4",
     "class-transformer": "^0.1.9",
