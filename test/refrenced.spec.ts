@@ -1,6 +1,7 @@
-import { clean, connect } from "./mongo";
-import { Entity, prop, Repository, referenced } from "../src";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, ObjectId } from 'mongodb';
+
+import { Entity, prop, referenced, Repository } from '../src';
+import { clean, close, connect } from './mongo';
 
 class User implements Entity {
   @prop()
@@ -72,3 +73,5 @@ describe('referenced objects', () => {
     expect(page).toHaveProperty('user');
   });
 });
+
+afterAll(() => close(client));

@@ -1,5 +1,5 @@
 import { classToPlain, plainToClass } from 'class-transformer';
-import { Collection as MongoCollection, FilterQuery, MongoClient, ObjectId } from 'mongodb';
+import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId } from 'mongodb';
 
 import { Ref } from '.';
 import { Entity } from './entity';
@@ -22,6 +22,13 @@ export class Repository<T extends Entity> {
 
   constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string) {
     this.collection = mongo.db().collection(collection);
+  }
+
+  async createIndexes() {
+    const indexes = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
+    if(indexes.length == 0)
+      return null;
+    return this.collection.createIndexes(indexes);
   }
 
   async insert(entity: T) {
@@ -54,8 +61,8 @@ export class Repository<T extends Entity> {
    * calls mongodb.find function and returns its cursor with attached map function that hydrates results
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
    */
-  find(query?: FilterQuery<T>) {
-    return this.collection.find(query).map(doc => this.hydrate(doc));
+  find(query?: FilterQuery<T>): Cursor<T> {
+    return this.collection.find(query).map(doc => this.hydrate(doc) as T);
   }
 
   async populate<S extends Entity>(Type: ClassType<S>, entity: S, refName: string) {

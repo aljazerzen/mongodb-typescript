@@ -1,41 +1,44 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, prop, Repository } from '../src';
+import { Entity, index, indexes, prop, Repository } from '../src';
 import { clean, close, connect } from './mongo';
 
-class User implements Entity {
-
-  @prop()
-  _id: ObjectId;
-
-  @prop()
-  name: string;
-
-  @prop()
-  age: number;
-
-  hello() {
-    return `Hello, my name is ${this.name} and I am ${this.age} years old`;
-  }
-}
-
-class UserRepo extends Repository<User> {
-  findAllByName(name: string) {
-    return this.find({ name }).toArray();
-  }
-}
-
 let client: MongoClient;
-let userRepo: UserRepo
 
 beforeAll(async () => {
   client = await connect();
-  userRepo = new UserRepo(User, client, 'users');
 });
 
 describe('basic', () => {
 
-  beforeAll(() => clean(client));
+  class User implements Entity {
+
+    @prop()
+    _id: ObjectId;
+
+    @prop()
+    name: string;
+
+    @prop()
+    age: number;
+
+    hello() {
+      return `Hello, my name is ${this.name} and I am ${this.age} years old`;
+    }
+  }
+
+  class UserRepo extends Repository<User> {
+    findAllByName(name: string) {
+      return this.find({ name }).toArray();
+    }
+  }
+
+  let userRepo: UserRepo;
+
+  beforeAll(async () => {
+    clean(client);
+    userRepo = new UserRepo(User, client, 'users');
+  });
 
   test('insert and findOne', async () => {
     const user = new User();
@@ -108,6 +111,140 @@ describe('basic', () => {
 
     const newCount = await userRepo.count();
     expect(newCount).toBe(count + 1);
+  });
+
+});
+
+describe('default values', () => {
+  class Star implements Entity {
+    @prop()
+    _id: ObjectId;
+
+    @prop()
+    age: number = 1215432154;
+  }
+
+  let starRepo: Repository<Star>;
+
+  beforeAll(() => {
+    clean(client);
+    starRepo = new Repository<Star>(Star, client, 'stars');
+  });
+
+  test('default value when creating new entity', async () => {
+    const star = new Star();
+    expect(star).toHaveProperty('age', 1215432154);
+    await starRepo.insert(star);
+
+    const saved = await starRepo.findById(star._id);
+
+    expect(saved).toHaveProperty('age', 1215432154);
+  });
+
+  test('default value when fetching an entity', async () => {
+    let res = await starRepo.collection.insertOne({});
+
+    const saved = await starRepo.findById(res.insertedId);
+
+    expect(saved).toHaveProperty('_id');
+    expect(saved).toHaveProperty('age', 1215432154);
+  });
+});
+
+describe('indexes', () => {
+  class Cat implements Entity {
+    @prop() _id: ObjectId
+
+    @prop() @index() name: string;
+  }
+
+  class House implements Entity {
+    @prop()
+    _id: ObjectId;
+
+    @prop() @index('2dsphere', { name: 'location_1' })
+    location: number[];
+  }
+
+  @indexes<HouseCat>([
+    { key: { houseId: 1, catId: 1 }, name: 'house_cat', unique: true }
+  ])
+  class HouseCat implements Entity {
+    @prop() _id: ObjectId;
+
+    @prop() houseId: ObjectId;
+    @prop() catId: ObjectId;
+  }
+
+  let houseRepo: Repository<House>;
+  let catRepo: Repository<Cat>;
+  let houseCatRepo: Repository<HouseCat>;
+
+  beforeAll(async () => {
+    houseRepo = new Repository<House>(House, client, 'houses');
+    catRepo = new Repository<Cat>(Cat, client, 'cats');
+    houseCatRepo = new Repository<HouseCat>(HouseCat, client, 'house_cats');
+    clean(client);
+  });
+
+  test('add simple string index', async () => {
+    const cat = new Cat();
+    cat.name = 'kimmy';
+    await catRepo.save(cat);
+
+    const res = await catRepo.createIndexes();
+    expect(res).toHaveProperty('numIndexesBefore');
+    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+  });
+
+  test('do not re-add existing index', async () => {
+    const res = await catRepo.createIndexes();
+    expect(res).toHaveProperty('numIndexesBefore');
+    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore);
+  });
+
+  test('location index', async () => {
+
+    const house = new House();
+    house.location = [45.15453, 12.354654];
+
+    await houseRepo.save(house);
+
+    await houseRepo.createIndexes();
+
+  });
+
+  test('location index', async () => {
+
+    const house = new House();
+    house.location = [45.15453, 12.354654];
+
+    await houseRepo.save(house);
+
+    await houseRepo.createIndexes();
+  });
+
+  test('compound index', async () => {
+    const cat = await catRepo.findOne();
+    const house = await houseRepo.findOne();
+
+    const houseCat = new HouseCat();
+    houseCat.catId = cat._id;
+    houseCat.houseId = house._id;
+    await houseCatRepo.save(houseCat);
+
+    // create unique compound index
+    const res = await houseCatRepo.createIndexes();
+    expect(res).toHaveProperty('numIndexesBefore');
+    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+
+    await expect((async () => {
+      const anotherHouseCat = new HouseCat();
+      anotherHouseCat.catId = cat._id;
+      anotherHouseCat.houseId = house._id;
+      await houseCatRepo.save(anotherHouseCat);
+
+    })()).rejects.toThrow(/E11000 duplicate key error/);
   });
 
 });

@@ -1,6 +1,7 @@
-import { clean, connect } from "./mongo";
-import { prop, Entity, Repository, nested } from "../src";
-import { MongoClient, ObjectId } from "mongodb";
+import { MongoClient, ObjectId } from 'mongodb';
+
+import { Entity, nested, prop, Repository } from '../src';
+import { clean, close, connect } from './mongo';
 
 class Settings {
   @prop() colorScheme: string;
@@ -80,3 +81,5 @@ describe('nested objects', () => {
     expect(saved).not.toHaveProperty('settings');
   });
 });
+
+afterAll(() => close(client));
