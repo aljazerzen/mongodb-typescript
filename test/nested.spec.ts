@@ -1,23 +1,22 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, nested, prop, Repository } from '../src';
+import { Entity, nested, objectId, Repository } from '../src';
 import { clean, close, connect } from './mongo';
 
 class Settings {
-  @prop() colorScheme: string;
-  @prop() articlesPerPage: number;
+  colorScheme: string;
+  articlesPerPage: number;
 }
 
 class Article {
-  @prop() title: string;
+  title: string;
 }
 
 class User implements Entity {
 
-  @prop()
+  @objectId()
   _id: ObjectId;
 
-  @prop()
   name: string;
 
   @nested(() => Article)

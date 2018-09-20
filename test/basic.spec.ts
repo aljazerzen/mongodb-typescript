@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, index, indexes, prop, Repository } from '../src';
+import { Entity, index, indexes, objectId, Repository } from '../src';
 import { clean, close, connect } from './mongo';
 
 let client: MongoClient;
@@ -12,15 +12,10 @@ beforeAll(async () => {
 describe('basic', () => {
 
   class User implements Entity {
-
-    @prop()
-    _id: ObjectId;
-
-    @prop()
+    @objectId() _id: ObjectId;
     name: string;
-
-    @prop()
     age: number;
+    @objectId() someIds: ObjectId[];
 
     hello() {
       return `Hello, my name is ${this.name} and I am ${this.age} years old`;
@@ -36,7 +31,7 @@ describe('basic', () => {
   let userRepo: UserRepo;
 
   beforeAll(async () => {
-    clean(client);
+    await clean(client);
     userRepo = new UserRepo(User, client, 'users');
   });
 
@@ -113,21 +108,32 @@ describe('basic', () => {
     expect(newCount).toBe(count + 1);
   });
 
+  test('array of ObjectIds', async () => {
+    const user = new User();
+    user.name = 'perry';
+    user.age = 21;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+
+    const saved = await userRepo.findById(user._id);
+    expect(saved.someIds).toHaveLength(2);
+    expect(saved.someIds).toContainEqual(user.someIds[0]);
+    expect(saved.someIds).toContainEqual(user.someIds[1]);
+  });
+
 });
 
 describe('default values', () => {
   class Star implements Entity {
-    @prop()
-    _id: ObjectId;
-
-    @prop()
+    @objectId() _id: ObjectId;
     age: number = 1215432154;
   }
 
   let starRepo: Repository<Star>;
 
-  beforeAll(() => {
-    clean(client);
+  beforeAll(async () => {
+    await clean(client);
     starRepo = new Repository<Star>(Star, client, 'stars');
   });
 
@@ -153,16 +159,14 @@ describe('default values', () => {
 
 describe('indexes', () => {
   class Cat implements Entity {
-    @prop() _id: ObjectId
-
-    @prop() @index() name: string;
+    @objectId() _id: ObjectId
+    @index() name: string;
   }
 
   class House implements Entity {
-    @prop()
-    _id: ObjectId;
+    @objectId() _id: ObjectId;
 
-    @prop() @index('2dsphere', { name: 'location_1' })
+    @index('2dsphere', { name: 'location_1' })
     location: number[];
   }
 
@@ -170,10 +174,10 @@ describe('indexes', () => {
     { key: { houseId: 1, catId: 1 }, name: 'house_cat', unique: true }
   ])
   class HouseCat implements Entity {
-    @prop() _id: ObjectId;
+    @objectId() _id: ObjectId;
 
-    @prop() houseId: ObjectId;
-    @prop() catId: ObjectId;
+    @objectId() houseId: ObjectId;
+    @objectId() catId: ObjectId;
   }
 
   let houseRepo: Repository<House>;
@@ -184,7 +188,7 @@ describe('indexes', () => {
     houseRepo = new Repository<House>(House, client, 'houses');
     catRepo = new Repository<Cat>(Cat, client, 'cats');
     houseCatRepo = new Repository<HouseCat>(HouseCat, client, 'house_cats');
-    clean(client);
+    await clean(client);
   });
 
   test('add simple string index', async () => {

@@ -18,14 +18,11 @@ This package is trying to be as non-restrictive as possible and to let the devel
 
 ```typescript
 // define your entity
-class User implements Entity {
-  @prop()
-  _id: ObjectId;
+class User implements Entity {  
+  @objectId() _id: ObjectId;
 
-  @prop()
   name: string;
-
-  @prop()
+  
   age: number = 15;
 
   hello() {

@@ -61,14 +61,18 @@ function pushToMetadata(metadataKey: string, values: any[], target: any) {
   Reflect.defineMetadata(metadataKey, data.concat(values), target);
 }
 
-export function prop() {
+export function objectId() {
   return function (target: any, propertyKey: string) {
     const targetType = Reflect.getMetadata('design:type', target, propertyKey);
 
     if (targetType === ObjectId) {
-      // ObjectId workaround
       Type(() => String)(target, propertyKey);
-      Transform(val => new ObjectId(val), { toClassOnly: false })(target, propertyKey);
+      Transform(val => new ObjectId(val))(target, propertyKey);
+    } else if (targetType === Array) {
+      Type(() => String)(target, propertyKey);
+      Transform(val => val.map((v: any) => new ObjectId(v)))(target, propertyKey);
+    } else {
+      throw Error('@objectId can only be used on properties of type ObjectId or ObjectId[]');
     }
   }
 }

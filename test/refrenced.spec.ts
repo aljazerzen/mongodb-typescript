@@ -1,28 +1,19 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, prop, referenced, Repository } from '../src';
+import { Entity, objectId, referenced, Repository } from '../src';
 import { clean, close, connect } from './mongo';
 
 class User implements Entity {
-  @prop()
-  _id: ObjectId;
-
-  @prop()
+  @objectId() _id: ObjectId;
   name: string;
 }
 
 class Page implements Entity {
-  @prop()
-  _id: ObjectId;
-
-  @prop()
+  @objectId() _id: ObjectId;
   text: string;
 
-  @referenced(() => User, 'userId')
-  user: User;
-
-  @prop()
-  userId: ObjectId;
+  @referenced(() => User, 'userId') user: User;
+  @objectId() userId: ObjectId;
 }
 
 let client: MongoClient;
@@ -70,6 +61,7 @@ describe('referenced objects', () => {
     const page = await pageRepo.findOne({});
     expect(page).not.toHaveProperty('user');
     await userRepo.populate(Page, page, 'user');
+    console.log(page);
     expect(page).toHaveProperty('user');
   });
 });
