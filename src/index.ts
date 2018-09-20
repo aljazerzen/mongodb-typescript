@@ -50,9 +50,9 @@ function isNotPrimitive(targetType: ClassType<any>, propertyKey: string) {
   }
 }
 
-function addRef<T extends Entity>(ref: Ref<T>, target: any) {
+function addRef<T extends Entity>(name: string, ref: Ref, target: any) {
   const refs = Reflect.getMetadata('mongo:refs', target) || {};
-  refs[ref.name] = ref;
+  refs[name] = ref;
   Reflect.defineMetadata('mongo:refs', refs, target);
 }
 
@@ -83,15 +83,25 @@ export function nested(typeFunction: TypeFunction) {
     isNotPrimitive(targetType, propertyKey);
 
     Type(typeFunction)(target, propertyKey);
+
+    pushToMetadata('mongo:nested', [{ name: propertyKey, typeFunction, array: targetType === Array } as Nested], target);
   }
 }
 
-export function referenced(typeFunction: TypeFunction, refId: string) {
+export function ref(refId?: string) {
   return function (target: any, propertyKey: string) {
     const targetType = Reflect.getMetadata('design:type', target, propertyKey);
     isNotPrimitive(targetType, propertyKey);
 
-    addRef({ id: refId, name: propertyKey, typeFunction }, target);
+    const array = targetType === Array;
+
+    if (!refId) {
+      refId = propertyKey + (array ? 'Ids' : 'Id');
+      Reflect.defineMetadata('design:type', (array ? Array : ObjectId), target, refId);
+      objectId()(target, refId);
+    }
+
+    addRef(propertyKey, { id: refId, array }, target);
   };
 }
 
@@ -116,8 +126,12 @@ export function indexes<T = any>(options: IndexOptions<T>[]) {
   }
 }
 
-export interface Ref<T extends Entity> {
-  id: string;   // field of main entity that holds id of the referenced entity 
-  name: string; // field of main entity that will hold populated data 
-  typeFunction: TypeFunction; // type of referenced entity
+export interface Nested {
+  name: string;
+  array: boolean;
+}
+
+export interface Ref {
+  id: string;
+  array: boolean;
 }

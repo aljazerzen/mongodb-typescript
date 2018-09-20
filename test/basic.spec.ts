@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
 import { Entity, index, indexes, objectId, Repository } from '../src';
-import { clean, close, connect } from './mongo';
+import { clean, close, connect } from './_mongo';
 
 let client: MongoClient;
 

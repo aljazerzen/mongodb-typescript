@@ -7,7 +7,7 @@
     "noEmit": true
   },
   "include": [
-    ".",
-    "../src/**/*.ts"
+    "test",
+    "src/**/*.ts"
   ]
 }

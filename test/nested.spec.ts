@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
 import { Entity, nested, objectId, Repository } from '../src';
-import { clean, close, connect } from './mongo';
+import { clean, close, connect } from './_mongo';
 
 class Settings {
   colorScheme: string;

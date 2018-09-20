@@ -1,4 +1,4 @@
-import { classToPlain, plainToClass } from 'class-transformer';
+import { plainToClass } from 'class-transformer';
 import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId } from 'mongodb';
 
 import { Ref } from '.';
@@ -7,6 +7,40 @@ import { Entity } from './entity';
 export declare type ClassType<T> = {
   new(...args: any[]): T;
 };
+
+export function dehydrate<T>(entity: T): Object {
+  // const plain = classToPlain(entity) as any;
+
+  const refs = Reflect.getMetadata('mongo:refs', entity) || {};
+
+  for (let name in refs) {
+    const ref: Ref = refs[name];
+    if ((entity as any)[name]) {
+      if (!ref.array) {
+        (entity as any)[ref.id] = (entity as any)[name]._id;
+      } else {
+        (entity as any)[ref.id] = (entity as any)[name].map((e: any) => e._id);
+      }
+    }
+  }
+  const plain: any = Object.assign({}, entity);
+  for (let name in refs) {
+    delete plain[name];
+  }
+
+  const nested = Reflect.getMetadata('mongo:nested', entity) || [];
+  for (let { name, array } of nested) {
+    if (plain[name]) {
+      if (!array) {
+        plain[name] = dehydrate(plain[name]);
+      } else {
+        plain[name] = plain[name].map((e: any) => dehydrate(e));
+      }
+    }
+  }
+
+  return plain;
+}
 
 export class Repository<T extends Entity> {
 
@@ -26,19 +60,19 @@ export class Repository<T extends Entity> {
 
   async createIndexes() {
     const indexes = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
-    if(indexes.length == 0)
+    if (indexes.length == 0)
       return null;
     return this.collection.createIndexes(indexes);
   }
 
   async insert(entity: T) {
-    const plain = this.dehydrate(entity);
+    const plain = dehydrate<T>(entity);
     const res = await this.collection.insertOne(plain);
     entity._id = res.insertedId;
   }
 
   async update(entity: T) {
-    const plain = this.dehydrate(entity);
+    const plain = dehydrate<T>(entity);
     await this.collection.updateOne({ _id: entity._id }, { $set: plain });
   }
 
@@ -57,6 +91,10 @@ export class Repository<T extends Entity> {
     return this.findOne({ _id });
   }
 
+  async findManyById(ids: ObjectId[]): Promise<T[]> {
+    return this.find({ _id: { $in: ids } }).toArray();
+  }
+
   /**
    * calls mongodb.find function and returns its cursor with attached map function that hydrates results
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
@@ -65,14 +103,33 @@ export class Repository<T extends Entity> {
     return this.collection.find(query).map(doc => this.hydrate(doc) as T);
   }
 
-  async populate<S extends Entity>(Type: ClassType<S>, entity: S, refName: string) {
-    const refs = Reflect.getMetadata('mongo:refs', Type.prototype) || {};
-    const ref: Ref<S> = refs[refName];
+  async populate<S extends Entity>(entity: S, refName: string) {
+    const refs = Reflect.getMetadata('mongo:refs', entity) || {};
+    const ref: Ref = refs[refName];
 
-    if (ref.typeFunction().prototype !== this.Type.prototype)
-      throw new Error(`incompatible repository: expected ${ref.typeFunction().name}, got ${this.Type.name}`);
+    if (!ref)
+      throw new Error(`cannot find ref '${refName}' on '${entity.constructor.name}'`);
+    // if (ref.typeFunction().prototype !== this.Type.prototype)
+    // throw new Error(`incompatible repository: expected ${ref.typeFunction().name}, got ${this.Type.name}`);
 
-    (entity as any)[ref.name] = await this.findById((entity as any)[ref.id] as ObjectId);
+    if (!ref.array) {
+      (entity as any)[refName] = await this.findById((entity as any)[ref.id] as ObjectId);
+    } else {
+      (entity as any)[refName] = await this.findManyById((entity as any)[ref.id] as ObjectId[]);
+    }
+  }
+
+  async populateMany<S extends Entity>(entities: S[], refName: string) {
+    const refs = Reflect.getMetadata('mongo:refs', entities[0]) || {};
+    const ref: Ref = refs[refName];
+
+    // if (ref.typeFunction().prototype !== this.Type.prototype)
+    // throw new Error(`incompatible repository: expected ${ref.typeFunction().name}, got ${this.Type.name}`);
+
+    const referenced = await this.findManyById(entities.map((entity: any) => entity[ref.id] as ObjectId));
+    for (let entity of entities) {
+      (entity as any)[refName] = referenced.find(r => r._id.equals((entity as any)[ref.id]));
+    }
   }
 
   /**
@@ -87,23 +144,6 @@ export class Repository<T extends Entity> {
       return this.collection.estimatedDocumentCount(query);
     else
       return this.collection.countDocuments(query);
-  }
-
-  dehydrate(entity: T): Object {
-    const refs = Reflect.getMetadata('mongo:refs', this.Type.prototype) || {};
-
-    const plain = classToPlain(entity) as any;
-
-    for (let name in refs) {
-      const ref: Ref<any> = refs[name];
-      if (plain[ref.name]) {
-        (entity as any)[ref.id] = (entity as any)[ref.name]._id;
-        plain[ref.id] = plain[ref.name]._id;
-
-        delete plain[ref.name];
-      }
-    }
-    return plain;
   }
 
   hydrate(plain: Object | null) {
