@@ -2,13 +2,12 @@ import { plainToClass } from 'class-transformer';
 import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId } from 'mongodb';
 
 import { Ref } from '.';
-import { Entity } from './entity';
 
 export declare type ClassType<T> = {
   new(...args: any[]): T;
 };
 
-export function dehydrate<T>(entity: T): Object {
+export function dehydrate<T>(entity: T, idField?: string): Object {
   // const plain = classToPlain(entity) as any;
 
   const refs = Reflect.getMetadata('mongo:refs', entity) || {};
@@ -24,6 +23,12 @@ export function dehydrate<T>(entity: T): Object {
     }
   }
   const plain: any = Object.assign({}, entity);
+
+  if (idField && idField !== '_id') {
+    plain._id = plain[idField];
+    delete plain[idField];
+  }
+
   for (let name in refs) {
     delete plain[name];
   }
@@ -42,7 +47,7 @@ export function dehydrate<T>(entity: T): Object {
   return plain;
 }
 
-export class Repository<T extends Entity> {
+export class Repository<T> {
 
   /**
    * Underlying mongodb collection (use with caution)
@@ -54,8 +59,13 @@ export class Repository<T extends Entity> {
     return this.collection;
   }
 
+  private idField: string;
+
   constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string) {
     this.collection = mongo.db().collection(collection);
+    this.idField = Reflect.getMetadata('mongo:id', this.Type.prototype);
+    if (!this.idField)
+      throw new Error(`repository cannot be created for entity '${Type.name}' because none of its properties has @id decorator'`);
   }
 
   async createIndexes() {
@@ -66,18 +76,18 @@ export class Repository<T extends Entity> {
   }
 
   async insert(entity: T) {
-    const plain = dehydrate<T>(entity);
+    const plain = dehydrate<T>(entity, this.idField);
     const res = await this.collection.insertOne(plain);
-    entity._id = res.insertedId;
+    (entity as any)[this.idField] = res.insertedId;
   }
 
   async update(entity: T) {
-    const plain = dehydrate<T>(entity);
-    await this.collection.updateOne({ _id: entity._id }, { $set: plain });
+    const plain = dehydrate<T>(entity, this.idField);
+    await this.collection.updateOne({ _id: (entity as any)[this.idField] }, { $set: plain });
   }
 
   async save(entity: T) {
-    if (!entity._id)
+    if (!(entity as any)[this.idField])
       await this.insert(entity);
     else
       await this.update(entity);
@@ -87,8 +97,8 @@ export class Repository<T extends Entity> {
     return this.hydrate(await this.collection.findOne<Object>(query));
   }
 
-  async findById(_id: ObjectId): Promise<T | null> {
-    return this.findOne({ _id });
+  async findById(id: ObjectId): Promise<T | null> {
+    return this.findOne({ _id: id });
   }
 
   async findManyById(ids: ObjectId[]): Promise<T[]> {
@@ -103,7 +113,7 @@ export class Repository<T extends Entity> {
     return this.collection.find(query).map(doc => this.hydrate(doc) as T);
   }
 
-  async populate<S extends Entity>(entity: S, refName: string) {
+  async populate<S>(entity: S, refName: string) {
     const refs = Reflect.getMetadata('mongo:refs', entity) || {};
     const ref: Ref = refs[refName];
 
@@ -119,7 +129,7 @@ export class Repository<T extends Entity> {
     }
   }
 
-  async populateMany<S extends Entity>(entities: S[], refName: string) {
+  async populateMany<S>(entities: S[], refName: string) {
     const refs = Reflect.getMetadata('mongo:refs', entities[0]) || {};
     const ref: Ref = refs[refName];
 
@@ -128,7 +138,7 @@ export class Repository<T extends Entity> {
 
     const referenced = await this.findManyById(entities.map((entity: any) => entity[ref.id] as ObjectId));
     for (let entity of entities) {
-      (entity as any)[refName] = referenced.find(r => r._id.equals((entity as any)[ref.id]));
+      (entity as any)[refName] = referenced.find(r => (r as any)[this.idField].equals((entity as any)[ref.id]));
     }
   }
 

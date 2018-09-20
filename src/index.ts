@@ -1,13 +1,11 @@
 import 'reflect-metadata';
 
-import { Transform, Type, TypeOptions } from 'class-transformer';
+import { Expose, Transform, Type, TypeOptions } from 'class-transformer';
 import { FilterQuery, ObjectId } from 'mongodb';
 
-import { Entity } from './entity';
 import { ClassType } from './repository';
 
 export * from './repository';
-export * from './entity';
 
 export type TypeFunction = (type?: TypeOptions) => ClassType<any>;
 
@@ -50,7 +48,7 @@ function isNotPrimitive(targetType: ClassType<any>, propertyKey: string) {
   }
 }
 
-function addRef<T extends Entity>(name: string, ref: Ref, target: any) {
+function addRef(name: string, ref: Ref, target: any) {
   const refs = Reflect.getMetadata('mongo:refs', target) || {};
   refs[name] = ref;
   Reflect.defineMetadata('mongo:refs', refs, target);
@@ -73,6 +71,20 @@ export function objectId() {
       Transform(val => val.map((v: any) => new ObjectId(v)))(target, propertyKey);
     } else {
       throw Error('@objectId can only be used on properties of type ObjectId or ObjectId[]');
+    }
+  }
+}
+
+export function id() {
+  return function (target: any, propertyKey: string) {
+    const targetType = Reflect.getMetadata('design:type', target, propertyKey);
+    Reflect.defineMetadata('mongo:id', propertyKey, target);
+
+    Expose({ name: '_id'})(target, propertyKey);
+
+    if (targetType === ObjectId) {
+      Type(() => String)(target, propertyKey);
+      objectId()(target, propertyKey);
     }
   }
 }

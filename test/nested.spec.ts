@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, nested, objectId, Repository } from '../src';
+import { id, nested, Repository } from '../src';
 import { clean, close, connect } from './_mongo';
 
 class Settings {
@@ -12,10 +12,8 @@ class Article {
   title: string;
 }
 
-class User implements Entity {
-
-  @objectId()
-  _id: ObjectId;
+class User {
+  @id() id: ObjectId;
 
   name: string;
 
@@ -47,10 +45,10 @@ describe('nested objects', () => {
     user.settings = settings;
     await userRepo.insert(user);
 
-    const saved = await userRepo.findById(user._id);
+    const saved = await userRepo.findById(user.id);
 
     expect(saved).toHaveProperty('name', 'hal');
-    expect(saved).toHaveProperty('_id');
+    expect(saved).toHaveProperty('id');
     expect(saved).toHaveProperty('settings');
     expect(saved.settings).toHaveProperty('articlesPerPage', 10);
     expect(saved.settings).toHaveProperty('colorScheme', 'BLACK_AND_YELLOW');
@@ -70,10 +68,10 @@ describe('nested objects', () => {
     user.articles = [article1, article2];
     await userRepo.insert(user);
 
-    const saved = await userRepo.findById(user._id);
+    const saved = await userRepo.findById(user.id);
 
     expect(saved).toHaveProperty('name', 'bay');
-    expect(saved).toHaveProperty('_id');
+    expect(saved).toHaveProperty('id');
     expect(saved).toHaveProperty('articles');
     expect(saved.articles).toHaveLength(2);
 

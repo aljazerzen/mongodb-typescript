@@ -18,8 +18,8 @@ This package is trying to be as non-restrictive as possible and to let the devel
 
 ```typescript
 // define your entity
-class User implements Entity {  
-  @objectId() _id: ObjectId;
+class User {  
+  @id() id: ObjectId;
 
   name: string;
   
@@ -31,29 +31,22 @@ class User implements Entity {
 }
 
 
-async function start() {
-  // open connection to MongoDB
-  const mongodb = await mongodb.connect('[your database url]');
+const repository = new Repository<User>(User, mongodbClient);
 
-  // create repository (think of it as reference to collection)
-  const userRepo = new Repository<User>(User, client);
+// create new user entity (MongoDB document)
+const user = new User();
+user.name = 'tom';
 
-  // create new user entity (MongoDB document)
-  const user = new User();
-  user.name = 'tom';
+await userRepo.insert(user);
 
-  // insert it into collection and retrieve _id
-  await userRepo.insert(user);
+// prints "User { id: 5ba2648a6f74af5def444491, name: 'tom', age: 15 }"
+console.log(user);
 
-  // prints "User { _id: 5ba2648a6f74af5def444491, name: 'tom', age: 15 }"
-  console.log(user);
+// now let's retrieve entity from database
+const saved = await userRepo.findById(user.id);
 
-  // now let's retrieve entity from database
-  const saved = await userRepo.findById(user._id);
-  
-  // prints `Hello, my name is tom and I am 15 years old`
-  saved.hello();
-}
+// prints `Hello, my name is tom and I am 15 years old`
+console.log(saved.hello());
 ```
 
 *Inspired by [Typegoose](https://www.npmjs.com/package/typegoose)*

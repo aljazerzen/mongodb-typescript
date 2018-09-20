@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { Entity, index, indexes, objectId, Repository } from '../src';
+import { id, index, indexes, objectId, Repository } from '../src';
 import { clean, close, connect } from './_mongo';
 
 let client: MongoClient;
@@ -11,8 +11,8 @@ beforeAll(async () => {
 
 describe('basic', () => {
 
-  class User implements Entity {
-    @objectId() _id: ObjectId;
+  class User {
+    @id() id: ObjectId;
     name: string;
     age: number;
     @objectId() someIds: ObjectId[];
@@ -41,10 +41,10 @@ describe('basic', () => {
     user.age = 15;
     await userRepo.insert(user);
 
-    const saved = await userRepo.findById(user._id);
+    const saved = await userRepo.findById(user.id);
 
     expect(saved).toHaveProperty('name', 'tom');
-    expect(saved).toHaveProperty('_id');
+    expect(saved).toHaveProperty('id');
   });
 
   test('update', async () => {
@@ -55,7 +55,7 @@ describe('basic', () => {
 
     await userRepo.update(user);
 
-    const saved = await userRepo.findById(user._id);
+    const saved = await userRepo.findById(user.id);
     expect(saved).toHaveProperty('age', user.age);
   });
 
@@ -65,14 +65,14 @@ describe('basic', () => {
     user.age = 15;
     await userRepo.save(user);
 
-    expect(user._id).not.toBeUndefined();
-    const initialUserId = user._id;
+    expect(user.id).not.toBeUndefined();
+    const initialUserId = user.id;
 
     user.age = Math.floor(Math.random() * 30);
     await userRepo.save(user);
 
-    const saved = await userRepo.findById(user._id);
-    expect(saved).toHaveProperty('_id', initialUserId);
+    const saved = await userRepo.findById(user.id);
+    expect(saved).toHaveProperty('id', initialUserId);
   });
 
   test('proper hydration', async () => {
@@ -81,7 +81,7 @@ describe('basic', () => {
 
     expect(saved).toHaveProperty('hello');
     expect(saved.hello()).toContain('Hello, my name is ');
-    expect(saved._id).toBeInstanceOf(ObjectId);
+    expect(saved.id).toBeInstanceOf(ObjectId);
   });
 
   test('custom repository function', async () => {
@@ -116,7 +116,7 @@ describe('basic', () => {
 
     await userRepo.save(user);
 
-    const saved = await userRepo.findById(user._id);
+    const saved = await userRepo.findById(user.id);
     expect(saved.someIds).toHaveLength(2);
     expect(saved.someIds).toContainEqual(user.someIds[0]);
     expect(saved.someIds).toContainEqual(user.someIds[1]);
@@ -125,8 +125,8 @@ describe('basic', () => {
 });
 
 describe('default values', () => {
-  class Star implements Entity {
-    @objectId() _id: ObjectId;
+  class Star {
+    @id() _id: ObjectId;
     age: number = 1215432154;
   }
 
@@ -158,13 +158,13 @@ describe('default values', () => {
 });
 
 describe('indexes', () => {
-  class Cat implements Entity {
-    @objectId() _id: ObjectId
+  class Cat {
+    @id() id: ObjectId
     @index() name: string;
   }
 
-  class House implements Entity {
-    @objectId() _id: ObjectId;
+  class House {
+    @id() id: ObjectId;
 
     @index('2dsphere', { name: 'location_1' })
     location: number[];
@@ -173,8 +173,8 @@ describe('indexes', () => {
   @indexes<HouseCat>([
     { key: { houseId: 1, catId: 1 }, name: 'house_cat', unique: true }
   ])
-  class HouseCat implements Entity {
-    @objectId() _id: ObjectId;
+  class HouseCat {
+    @id() _id: ObjectId;
 
     @objectId() houseId: ObjectId;
     @objectId() catId: ObjectId;
@@ -233,8 +233,8 @@ describe('indexes', () => {
     const house = await houseRepo.findOne();
 
     const houseCat = new HouseCat();
-    houseCat.catId = cat._id;
-    houseCat.houseId = house._id;
+    houseCat.catId = cat.id;
+    houseCat.houseId = house.id;
     await houseCatRepo.save(houseCat);
 
     // create unique compound index
@@ -244,8 +244,8 @@ describe('indexes', () => {
 
     await expect((async () => {
       const anotherHouseCat = new HouseCat();
-      anotherHouseCat.catId = cat._id;
-      anotherHouseCat.houseId = house._id;
+      anotherHouseCat.catId = cat.id;
+      anotherHouseCat.houseId = house.id;
       await houseCatRepo.save(anotherHouseCat);
 
     })()).rejects.toThrow(/E11000 duplicate key error/);
