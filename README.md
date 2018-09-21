@@ -3,6 +3,7 @@
 > Hydrate MongoDB documents into TypeScript-defined objects
 
  - [Motivation](#motivation)
+ - [Install](#install)
  - [Quick start](#quick-start)
  - [Reference](#reference)
 
@@ -20,9 +21,17 @@ It may seem that it is a TypeScript equivalent to `mongoose` package, but this i
 
 This package is trying to be as non-restrictive as possible and to let the developer access underlying `mongodb` functions and mechanism (such as cursors) while still providing hydration, population and schema reflection.
 
+## Install
+
+```
+$ npm install mongodb-typescript
+```
+
 ## Quick start
 
 ```typescript
+import { id, Repository } from 'mongodb-typescript';
+
 // define your entity
 class User {  
   @id id: ObjectId;
