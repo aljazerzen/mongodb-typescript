@@ -1,7 +1,7 @@
 import { plainToClass } from 'class-transformer';
 import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId } from 'mongodb';
 
-import { Ref } from '.';
+import { IndexOptions, Ref } from '.';
 
 export declare type ClassType<T> = {
   new(...args: any[]): T;
@@ -47,6 +47,13 @@ export function dehydrate<T>(entity: T, idField?: string): Object {
   return plain;
 }
 
+export interface RepositoryOptions {
+  /**
+   * create indexes when creating repository. Will force `background` flag and not block other database operations.
+   */
+  autoIndex?: boolean;
+}
+
 export class Repository<T> {
 
   private readonly collection: MongoCollection;
@@ -61,17 +68,28 @@ export class Repository<T> {
 
   private idField: string;
 
-  constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string) {
+  constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string, options?: RepositoryOptions) {
     this.collection = mongo.db().collection(collection);
     this.idField = Reflect.getMetadata('mongo:id', this.Type.prototype);
     if (!this.idField)
       throw new Error(`repository cannot be created for entity '${Type.name}' because none of its properties has @id decorator'`);
+
+    if (options && options.autoIndex)
+      this.createIndexes(true);
   }
 
-  async createIndexes() {
-    const indexes = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
+  async createIndexes(forceBackground: boolean = false) {
+    const indexes: IndexOptions<T>[] = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
+
     if (indexes.length == 0)
       return null;
+
+    if (forceBackground) {
+      for (let index of indexes) {
+        index.background = true;
+      }
+    }
+
     return this.collection.createIndexes(indexes);
   }
 
