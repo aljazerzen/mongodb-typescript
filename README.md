@@ -2,6 +2,12 @@
 
 > Hydrate MongoDB documents into TypeScript-defined objects
 
+ - [Motivation](#motivation)
+ - [Quick start](#quick-start)
+ - [Reference](#reference)
+
+## Motivation
+
 When using MongoDB with TypeScript we usually want to save our "strongly-typed" entities into database collection and then 
 retrieve them back at some later time. During this we face three major difficulties:
  1. **objects returned by `mongodb` driver are plain objects**. This means that if we have saved an object with some functions, these functions will not be saved and will not be present on the retrieved document. If we were to assign all properties of received object to a properly TypeScript-typed object, we would have to do this recursively, since some properties can also be typed objects and have own functions.
@@ -14,7 +20,7 @@ It may seem that it is a TypeScript equivalent to `mongoose` package, but this i
 
 This package is trying to be as non-restrictive as possible and to let the developer access underlying `mongodb` functions and mechanism (such as cursors) while still providing hydration, population and schema reflection.
 
-## Basic usage
+## Quick start
 
 ```typescript
 // define your entity
@@ -51,6 +57,30 @@ console.log(saved.hello());
 
 ## Reference 
 
+- [Entity definition](#entity-definition)
+  - [@id](#id)
+  - [@objectId](#objectId)
+  - [@nested](#nested)
+  - [@ref](#ref)
+  - [@index](#index)
+  - [@indexes](#indexes)
+- [Repository<T>](#Repository<T>)
+  - [constructor](#constructor)
+  - [c](#c)
+  - [count](#count)
+  - [createIndexes](#createIndexes)
+  - [insert](#insert)
+  - [update](#update)
+  - [save](#save)
+  - [findOne](#findOne)
+  - [findById](#findById)
+  - [findManyById](#findManyById)
+  - [find](#find)
+  - [populate](#populate)
+  - [populateMany](#populateMany)
+  - [hydrate](#hydrate)
+  - [dehydrate](#dehydrate)
+
 ### Entity definition
 
 #### @id
@@ -82,6 +112,9 @@ Used to mark nested entity or array of entities.
 | Parameter    |                                              |
 | ------------ | -------------------------------------------- |
 | typeFunction | Function that returns type of nested entity  |
+
+
+Example usage:
 
 ```ts
 class Texts {
@@ -130,6 +163,9 @@ To access this key directly or apply a custom name you can pass a parameter with
 | ------------ | ----------------------------------------------------- |
 | refId        | Optional. Name of field should hold referencing key   |
 
+
+Example usage:
+
 ```ts
 class User {
   @id id: ObjectId;
@@ -176,12 +212,17 @@ Used to define an index on a field.
 
 *does not actually create the index. Use Repository.createIndexes to do so.*
 
-| Parameter    |                                                                  |
+Parameters:
+
+| parameter    |                                                                  |
 | ------------ | ---------------------------------------------------------------- |
 | type         | Type of index. Use 1 or -1 for ascending or descending order, respectively. Use string value for other index types (eg. '2dsphere' for geo spacial index). Defaults to 1 |
 | options      | Optional. SimpleIndexOptions. See table below, SimpleIndexOptions interface or [mongodb docs](http://docs.mongodb.org/manual/reference/command/createIndexes/) |
 
-| SimpleIndexOptions      | type     |                                                                 |
+
+SimpleIndexOptions:
+
+| field                  | type     |                                                                 |
 | ----------------------- | -------- | --------------------------------------------------------------- |
 | name                    | string   | Name of the index. Defaults to field name.                      |
 | background              | boolean  |                                                                 |
@@ -201,7 +242,9 @@ Used to define an index on a field.
 | bucketSize              | number   |                                                                 |
 | collation               | Object   |                                                                 |
 
+
 Example usage:
+
 ```ts
 class User {
   ...
@@ -217,11 +260,14 @@ Used to define an indexes on a entity (most likely compound).
 
 *does not actually create the index. Use Repository.createIndexes to do so.*
 
-| parameter | type | |
-| --- | --- | --- |
-| indexes | IndexOptions[] | |
+Parameters: 
 
-*IndexOptions*:
+| parameter | type |
+| --- | --- |
+| indexes | IndexOptions[] |
+
+
+IndexOptions:
 
 | field | type | |
 | --- | --- | --- |
@@ -254,23 +300,43 @@ Can be used to access all features of mongodb, but returns non-hydrated (plain) 
 
 #### count
 
+*TODO*
+
 #### createIndexes
+
+*TODO*
 
 #### insert
 
+*TODO*
+
 #### update
+
+*TODO*
 
 #### save
 
+*TODO*
+
 #### findOne
+
+*TODO*
 
 #### findById
 
+*TODO*
+
 #### findManyById
+
+*TODO*
 
 #### find
 
+*TODO*
+
 #### populate
+
+*TODO*
 
 ```ts
 await userRepo.populate(post, 'author');
@@ -278,6 +344,7 @@ await userRepo.populate(post, 'author');
 
 #### populateMany
 
+*TODO*
 
 #### hydrate
 
