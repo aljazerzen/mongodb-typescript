@@ -167,11 +167,8 @@ export class Repository<T> {
    * @param estimate whether estimatedDocumentCount or countDocuments will be called.
    * @returns integer
    */
-  async count(query?: FilterQuery<T>, estimate = true) {
-    if (estimate)
-      return this.collection.estimatedDocumentCount(query);
-    else
-      return this.collection.countDocuments(query);
+  async count(query?: FilterQuery<T>) {
+    return this.collection.countDocuments(query);
   }
 
   hydrate(plain: Object | null) {
