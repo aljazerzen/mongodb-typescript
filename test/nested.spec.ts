@@ -13,7 +13,7 @@ class Article {
 }
 
 class User {
-  @id() id: ObjectId;
+  @id id: ObjectId;
 
   name: string;
 

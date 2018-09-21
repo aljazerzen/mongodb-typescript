@@ -12,10 +12,10 @@ beforeAll(async () => {
 describe('basic', () => {
 
   class User {
-    @id() id: ObjectId;
+    @id id: ObjectId;
     name: string;
     age: number;
-    @objectId() someIds: ObjectId[];
+    @objectId someIds: ObjectId[];
 
     hello() {
       return `Hello, my name is ${this.name} and I am ${this.age} years old`;
@@ -88,7 +88,7 @@ describe('basic', () => {
     const user = new User();
     user.name = 'tom';
     user.age = 22;
-    await userRepo.collection.insertOne(user);
+    await userRepo.c.insertOne(user);
 
     const users = await userRepo.findAllByName('tom');
 
@@ -126,7 +126,7 @@ describe('basic', () => {
 
 describe('default values', () => {
   class Star {
-    @id() _id: ObjectId;
+    @id _id: ObjectId;
     age: number = 1215432154;
   }
 
@@ -148,7 +148,7 @@ describe('default values', () => {
   });
 
   test('default value when fetching an entity', async () => {
-    let res = await starRepo.collection.insertOne({});
+    let res = await starRepo.c.insertOne({});
 
     const saved = await starRepo.findById(res.insertedId);
 
@@ -159,12 +159,12 @@ describe('default values', () => {
 
 describe('indexes', () => {
   class Cat {
-    @id() id: ObjectId
+    @id id: ObjectId
     @index() name: string;
   }
 
   class House {
-    @id() id: ObjectId;
+    @id id: ObjectId;
 
     @index('2dsphere', { name: 'location_1' })
     location: number[];
@@ -174,10 +174,10 @@ describe('indexes', () => {
     { key: { houseId: 1, catId: 1 }, name: 'house_cat', unique: true }
   ])
   class HouseCat {
-    @id() _id: ObjectId;
+    @id _id: ObjectId;
 
-    @objectId() houseId: ObjectId;
-    @objectId() catId: ObjectId;
+    @objectId houseId: ObjectId;
+    @objectId catId: ObjectId;
   }
 
   let houseRepo: Repository<House>;

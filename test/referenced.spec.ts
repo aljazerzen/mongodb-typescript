@@ -4,23 +4,23 @@ import { id, nested, objectId, ref, Repository } from '../src';
 import { clean, close, connect } from './_mongo';
 
 class User {
-  @id() _id: ObjectId;
+  @id _id: ObjectId;
   name: string;
 }
 
 class Comment {
-  @objectId() _id: ObjectId;
+  @objectId _id: ObjectId;
   text: string;
 
   @ref() commentator: User;
 }
 
 class Page {
-  @id() _id: ObjectId;
+  @id _id: ObjectId;
   text: string;
 
   @ref() author: User;
-  @objectId() authorId: ObjectId;
+  @objectId authorId: ObjectId;
 
   @nested(() => Comment) comments: Comment[];
 
@@ -67,7 +67,7 @@ describe('referenced objects', () => {
     expect(page.author).toHaveProperty('name', user1.name);
     expect(page).toHaveProperty('authorId', user1._id);
 
-    const raw = await pageRepo.collection.findOne({ _id: page._id });
+    const raw = await pageRepo.c.findOne({ _id: page._id });
     expect(raw).not.toHaveProperty('author');
     expect(raw).toHaveProperty('authorId');
 

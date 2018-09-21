@@ -59,33 +59,29 @@ function pushToMetadata(metadataKey: string, values: any[], target: any) {
   Reflect.defineMetadata(metadataKey, data.concat(values), target);
 }
 
-export function objectId() {
-  return function (target: any, propertyKey: string) {
-    const targetType = Reflect.getMetadata('design:type', target, propertyKey);
+export function objectId(target: any, propertyKey: string) {
+  const targetType = Reflect.getMetadata('design:type', target, propertyKey);
 
-    if (targetType === ObjectId) {
-      Type(() => String)(target, propertyKey);
-      Transform(val => new ObjectId(val))(target, propertyKey);
-    } else if (targetType === Array) {
-      Type(() => String)(target, propertyKey);
-      Transform(val => val.map((v: any) => new ObjectId(v)))(target, propertyKey);
-    } else {
-      throw Error('@objectId can only be used on properties of type ObjectId or ObjectId[]');
-    }
+  if (targetType === ObjectId) {
+    Type(() => String)(target, propertyKey);
+    Transform(val => new ObjectId(val))(target, propertyKey);
+  } else if (targetType === Array) {
+    Type(() => String)(target, propertyKey);
+    Transform(val => val.map((v: any) => new ObjectId(v)))(target, propertyKey);
+  } else {
+    throw Error('@objectId can only be used on properties of type ObjectId or ObjectId[]');
   }
 }
 
-export function id() {
-  return function (target: any, propertyKey: string) {
-    const targetType = Reflect.getMetadata('design:type', target, propertyKey);
-    Reflect.defineMetadata('mongo:id', propertyKey, target);
+export function id(target: any, propertyKey: string) {
+  const targetType = Reflect.getMetadata('design:type', target, propertyKey);
+  Reflect.defineMetadata('mongo:id', propertyKey, target);
 
-    Expose({ name: '_id'})(target, propertyKey);
+  Expose({ name: '_id'})(target, propertyKey);
 
-    if (targetType === ObjectId) {
-      Type(() => String)(target, propertyKey);
-      objectId()(target, propertyKey);
-    }
+  if (targetType === ObjectId) {
+    Type(() => String)(target, propertyKey);
+    objectId(target, propertyKey);
   }
 }
 
@@ -110,7 +106,7 @@ export function ref(refId?: string) {
     if (!refId) {
       refId = propertyKey + (array ? 'Ids' : 'Id');
       Reflect.defineMetadata('design:type', (array ? Array : ObjectId), target, refId);
-      objectId()(target, refId);
+      objectId(target, refId);
     }
 
     addRef(propertyKey, { id: refId, array }, target);

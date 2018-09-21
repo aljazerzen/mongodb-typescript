@@ -49,12 +49,12 @@ export function dehydrate<T>(entity: T, idField?: string): Object {
 
 export class Repository<T> {
 
+  private readonly collection: MongoCollection;
+
   /**
    * Underlying mongodb collection (use with caution)
    * any of methods from this will not return hydrated objects
    */
-  collection: MongoCollection;
-
   get c(): MongoCollection {
     return this.collection;
   }
