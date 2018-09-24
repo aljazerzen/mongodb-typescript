@@ -1,6 +1,6 @@
 {
   "name": "mongodb-typescript",
-  "version": "1.4.4",
+  "version": "1.5.0",
   "description": "Hydrate MongoDB documents into TypeScript-defined objects",
   "keywords": [
     "mongodb", "typescript", "nosql"
