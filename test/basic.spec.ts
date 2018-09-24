@@ -122,6 +122,16 @@ describe('basic', () => {
     expect(saved.someIds).toContainEqual(user.someIds[1]);
   });
 
+  test('remove', async () => {
+    const count = await userRepo.count();
+
+    const saved = await userRepo.findOne();
+    await userRepo.remove(saved);
+    
+    const newCount = await userRepo.count();
+    expect(newCount).toBe(count - 1);
+  });
+
 });
 
 describe('default values', () => {

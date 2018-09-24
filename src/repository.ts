@@ -123,6 +123,10 @@ export class Repository<T> {
     return this.find({ _id: { $in: ids } }).toArray();
   }
 
+  async remove(entity: T): Promise<void> {
+    await this.c.deleteOne({ _id: (entity as any)[this.idField] });
+  }
+
   /**
    * calls mongodb.find function and returns its cursor with attached map function that hydrates results
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
