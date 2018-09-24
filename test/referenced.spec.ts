@@ -103,10 +103,14 @@ describe('referenced objects', () => {
     let saved = await pageRepo.findById(page._id);
     expect(saved).not.toBeNull();
 
-    // await userRepo.populateMany(page.comments, 'commentator');
-    // for (let comment of page.comments) {
-      // expect(comment).toHaveProperty('commentator');
-    // }
+    await userRepo.populateMany(page.comments, 'commentator');
+    for (let comment of page.comments) {
+      expect(comment).toHaveProperty('commentator');
+    }
+  });
+
+  test('populate many with array with zero length', async () => {
+    await userRepo.populateMany([], 'commentator');
   });
 
   test('reference many', async () => {

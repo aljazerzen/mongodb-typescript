@@ -148,6 +148,8 @@ export class Repository<T> {
   }
 
   async populateMany<S>(entities: S[], refName: string) {
+    if(entities.length === 0)
+      return;
     const refs = Reflect.getMetadata('mongo:refs', entities[0]) || {};
     const ref: Ref = refs[refName];
 
