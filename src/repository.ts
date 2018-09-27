@@ -101,7 +101,7 @@ export class Repository<T> {
 
   async update(entity: T) {
     const plain = dehydrate<T>(entity, this.idField);
-    await this.collection.updateOne({ _id: (entity as any)[this.idField] }, { $set: plain });
+    await this.collection.replaceOne({ _id: (entity as any)[this.idField] }, plain);
   }
 
   async save(entity: T) {
