@@ -14,11 +14,13 @@ export function dehydrate<T>(entity: T, idField?: string): Object {
 
   for (let name in refs) {
     const ref: Ref = refs[name];
-    if ((entity as any)[name]) {
+    const reffedEntity = (entity as any)[name];
+    if (reffedEntity) {
       if (!ref.array) {
-        (entity as any)[ref.id] = (entity as any)[name]._id;
+        const idField = Reflect.getMetadata('mongo:id', reffedEntity);
+        (entity as any)[ref.id] = reffedEntity[idField];
       } else {
-        (entity as any)[ref.id] = (entity as any)[name].map((e: any) => e._id);
+        (entity as any)[ref.id] = reffedEntity.map((e: any) => e[Reflect.getMetadata('mongo:id', e)]);
       }
     }
   }
