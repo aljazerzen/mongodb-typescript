@@ -9,6 +9,8 @@ export declare type ClassType<T> = {
 
 export function dehydrate<T>(entity: T, idField?: string): Object {
   // const plain = classToPlain(entity) as any;
+  if(!entity)
+    return entity;
 
   const refs = Reflect.getMetadata('mongo:refs', entity) || {};
 

@@ -77,6 +77,20 @@ describe('nested objects', () => {
 
     expect(saved).not.toHaveProperty('settings');
   });
+
+  test('falsy values', async () => {
+    const user = new User();
+    user.name = 'james';
+    user.articles = [null, undefined];
+    await userRepo.insert(user);
+
+    const saved = await userRepo.findById(user.id);
+
+    expect(saved).toHaveProperty('articles');
+    expect(saved.articles).toHaveLength(2);
+    expect(saved.articles[0]).toBeNull();
+    expect(saved.articles[1]).toBeNull();
+  });
 });
 
 afterAll(() => close(client));
