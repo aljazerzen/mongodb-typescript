@@ -9,11 +9,11 @@
 
 ## Motivation
 
-When using MongoDB with TypeScript we usually want to save our "strongly-typed" entities into database collection and then 
+When using MongoDB with TypeScript we usually want to save our "strongly-typed" entities into database collection and then
 retrieve them back at some later time. During this we face three major difficulties:
  1. **objects returned by `mongodb` driver are plain objects**. This means that if we have saved an object with some functions, these functions will not be saved and will not be present on the retrieved document. If we were to assign all properties of received object to a properly TypeScript-typed object, we would have to do this recursively, since some properties can also be typed objects and have own functions.
- 2. **there is not easy way to reference other collections**. In a noSQL database relations should be avoided, but we all know this is not always a viable option. In such case we define a field with id referencing some other collection and then make separate request to retrieve referenced entity and append it to referencing entity. This is tedious and not easy to explain well to TypeScript's static typing.   
- 3. **class definitions should reflect database schema**. In particular: we want to use a property decorator to define database indexes 
+ 2. **there is not easy way to reference other collections**. In a noSQL database relations should be avoided, but we all know this is not always a viable option. In such case we define a field with id referencing some other collection and then make separate request to retrieve referenced entity and append it to referencing entity. This is tedious and not easy to explain well to TypeScript's static typing.
+ 3. **class definitions should reflect database schema**. In particular: we want to use a property decorator to define database indexes
 
 This package strives to facilitate at these points by wrapping official `mongodb` package. It utilizes `class-transformer` package to hydrate and de-hydrate plain object into classed objects and vice-versa.
 
@@ -33,11 +33,11 @@ $ npm install mongodb-typescript
 import { id, Repository } from 'mongodb-typescript';
 
 // define your entity
-class User {  
+class User {
   @id id: ObjectId;
 
   name: string;
-  
+
   age: number = 15;
 
   hello() {
@@ -64,7 +64,7 @@ const saved = await userRepo.findById(user.id);
 console.log(saved.hello());
 ```
 
-## Reference 
+## Reference
 
 - [Entity definition](#entity-definition)
   - [@id](#id)
@@ -94,7 +94,7 @@ console.log(saved.hello());
 
 #### @id
 
-Required. Defines primary id that will be used as `_id` of the mongo collection. 
+Required. Defines primary id that will be used as `_id` of the mongo collection.
 
 ```ts
 class Post {
@@ -104,7 +104,7 @@ class Post {
 
 #### @objectId
 
-All properties except ones decorated with `@id` that are of type ObjectId (from `bson` package) must have `@objectId` because underlying package `class-transformer` does not handle it correctly. 
+All properties except ones decorated with `@id` that are of type ObjectId (from `bson` package) must have `@objectId` because underlying package `class-transformer` does not handle it correctly.
 
 ```ts
 class Post {
@@ -217,7 +217,7 @@ class Post {
 
 #### @index
 
-Used to define an index on a field. 
+Used to define an index on a field.
 
 *does not actually create the index. Use Repository.createIndexes to do so.*
 
@@ -269,7 +269,7 @@ Used to define an indexes on a entity (most likely compound).
 
 *does not actually create the index. Use Repository.createIndexes to do so.*
 
-Parameters: 
+Parameters:
 
 | parameter | type |
 | --- | --- |
@@ -292,7 +292,7 @@ Reference to `mongodb` collection that handles hydration and de-hydration of doc
 
 Repository is a generic class that requires type parameter T should be type of entity that is stored in referenced collection.
 
-Different repositories may reference collections in different databases at different hosts.  
+Different repositories may reference collections in different databases at different hosts.
 
 #### constructor
 
@@ -302,9 +302,9 @@ Different repositories may reference collections in different databases at diffe
 | mongoClient | MongoClient | mongo client to use for all requests |
 | collection | string | name of collection to reference |
 
-#### c 
+#### c
 
-`mongodb` collection used to make all the requests to the database. 
+`mongodb` collection used to make all the requests to the database.
 Can be used to access all features of mongodb, but returns non-hydrated (plain) objects.
 
 #### count
@@ -321,7 +321,15 @@ Can be used to access all features of mongodb, but returns non-hydrated (plain) 
 
 #### update
 
-*TODO*
+| parameter | type | |
+| --- | --- | --- |
+| entity | Object<T> | Entity to update, must be of type T |
+| options | ReplaceOneOptions | Options to pass to the underlying replaceOne call |
+
+```ts
+await userRepo.update(post);
+await userRepo.update(post, { upsert: true });
+```
 
 #### save
 
@@ -359,11 +367,11 @@ await userRepo.populate(post, 'author');
 
 Converts a plain object from database into typed entity with functions, typed nested entities and correctly named _id field.
 
-Use this function when fetching documents via vanilla `mongodb` collection. 
+Use this function when fetching documents via vanilla `mongodb` collection.
 
 #### dehydrate
 
-Returns plain object that can be saved to database. 
+Returns plain object that can be saved to database.
 It handles custom _id names and dereferences objects (removes referenced objects and sets referencing keys).
 
 > This is a standalone function and does not require associated repository.
