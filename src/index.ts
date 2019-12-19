@@ -96,6 +96,12 @@ export function nested(typeFunction: TypeFunction) {
   }
 }
 
+export function ignore(target: any, propertyKey: any) {
+  const ignores = Reflect.getMetadata('mongo:ignore', target) || {};
+  ignores[propertyKey] = true;
+  Reflect.defineMetadata('mongo:ignore', ignores, target);
+}
+
 export function ref(refId?: string) {
   return function (target: any, propertyKey: string) {
     const targetType = Reflect.getMetadata('design:type', target, propertyKey);
