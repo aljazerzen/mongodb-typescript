@@ -70,6 +70,7 @@ console.log(saved.hello());
   - [@id](#id)
   - [@objectId](#objectId)
   - [@nested](#nested)
+  - [@ignore](#ignore)
   - [@ref](#ref)
   - [@index](#index)
   - [@indexes](#indexes)
@@ -157,6 +158,28 @@ This would represent following mongo document:
     { "text": "This is good." },
     { "text": "This is bad." }
   ]
+}
+```
+
+#### @ignore
+
+Used to mark a property as ignored so it will not ba saved in the database.
+
+Example usage:
+```ts
+class User {
+  @id id: ObjectId;
+  name: string;
+  @ignore onlyImportantAtRuntime: number;
+}
+```
+
+This would represent following mongo document:
+```ts
+// user
+{
+  "_id": ObjectId("5b27d15bfab97f681aac2862"),
+  "name": "gregory"
 }
 ```
 

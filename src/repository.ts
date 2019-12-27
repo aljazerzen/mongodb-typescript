@@ -48,6 +48,11 @@ export function dehydrate<T>(entity: T, idField?: string): Object {
     }
   }
 
+  const ignores = Reflect.getMetadata('mongo:ignore', entity) || {};
+  for (const name in ignores) {
+    delete plain[name];
+  }
+
   return plain;
 }
 
