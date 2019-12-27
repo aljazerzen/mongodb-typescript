@@ -263,4 +263,42 @@ describe('indexes', () => {
 
 });
 
+describe('multiple databases', () => {
+  class Entity1 {
+    @id id: ObjectId
+  }
+
+  class Entity2 {
+    @id id: ObjectId;
+  }
+
+  let repo1: Repository<Entity1>;
+  let repo2: Repository<Entity2>;
+
+  const CUSTOM_DATABASE_NAME = 'mongodb-typescript-custom-database';
+
+  beforeAll(async () => {
+    repo1 = new Repository<Entity1>(Entity1, client, 'entity1'); // database from URL
+    repo2 = new Repository<Entity2>(Entity2, client, 'entity2', { databaseName: CUSTOM_DATABASE_NAME });
+    await clean(client);
+    await clean(client, CUSTOM_DATABASE_NAME);
+  });
+
+  test('create entity in default database', async () => {
+    const entity1 = new Entity1();
+    await repo1.save(entity1);
+
+    const count1 = await client.db().collection('entity1').countDocuments();
+    expect(count1).toBe(1);
+  });
+
+  test('create entity in custom database', async () => {
+    const entity2 = new Entity2();
+    await repo2.save(entity2);
+
+    const count2 = await client.db(CUSTOM_DATABASE_NAME).collection('entity2').countDocuments();
+    expect(count2).toBe(1);
+  });
+});
+
 afterAll(() => close(client));

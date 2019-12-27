@@ -5,8 +5,8 @@ export async function connect() {
   return await mongodb.connect(url, { useNewUrlParser: true });
 }
 
-export async function clean(mongo: mongodb.MongoClient) {
-  await mongo.db().dropDatabase();
+export async function clean(mongo: mongodb.MongoClient, databaseName?: string) {
+  await mongo.db(databaseName).dropDatabase();
 }
 
 export async function close(mongo: mongodb.MongoClient) {

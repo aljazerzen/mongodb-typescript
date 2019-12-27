@@ -61,6 +61,13 @@ export interface RepositoryOptions {
    * create indexes when creating repository. Will force `background` flag and not block other database operations.
    */
   autoIndex?: boolean;
+
+  /**
+   * database name passed to MongoClient.db
+   * 
+   * overrides database name in connection string
+   */
+  databaseName?: string;
 }
 
 export class Repository<T> {
@@ -77,13 +84,13 @@ export class Repository<T> {
 
   private idField: string;
 
-  constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string, options?: RepositoryOptions) {
-    this.collection = mongo.db().collection(collection);
+  constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string, options: RepositoryOptions = {}) {
+    this.collection = mongo.db(options.databaseName).collection(collection);
     this.idField = Reflect.getMetadata('mongo:id', this.Type.prototype);
     if (!this.idField)
       throw new Error(`repository cannot be created for entity '${Type.name}' because none of its properties has @id decorator'`);
 
-    if (options && options.autoIndex)
+    if (options.autoIndex)
       this.createIndexes(true);
   }
 
