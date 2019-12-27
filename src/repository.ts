@@ -1,5 +1,5 @@
 import { plainToClass } from 'class-transformer';
-import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId } from 'mongodb';
+import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId, ReplaceOneOptions } from 'mongodb';
 
 import { IndexOptions, Ref } from '.';
 
@@ -103,9 +103,9 @@ export class Repository<T> {
     (entity as any)[this.idField] = res.insertedId;
   }
 
-  async update(entity: T) {
+  async update(entity: T, options: ReplaceOneOptions = {}) {
     const plain = dehydrate<T>(entity, this.idField);
-    await this.collection.replaceOne({ _id: (entity as any)[this.idField] }, plain);
+    await this.collection.replaceOne({ _id: (entity as any)[this.idField] }, plain, options);
   }
 
   async save(entity: T) {
