@@ -2,7 +2,7 @@ import * as mongodb from 'mongodb';
 
 export async function connect() {
   const url = process.env.MONGO_URL || 'mongodb://localhost:27017/mongodb-typescript';
-  return await mongodb.connect(url, { useNewUrlParser: true });
+  return new mongodb.MongoClient(url, { useNewUrlParser: true, useUnifiedTopology: true }).connect();
 }
 
 export async function clean(mongo: mongodb.MongoClient, databaseName?: string) {
