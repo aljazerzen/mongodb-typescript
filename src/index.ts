@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 
 import { Expose, Transform, Type, TypeOptions } from 'class-transformer';
-import { FilterQuery, ObjectId } from 'mongodb';
+import { CollationDocument, FilterQuery, IndexSpecification, ObjectId } from 'mongodb';
 
 import { ClassType } from './repository';
 
@@ -19,6 +19,9 @@ export interface IndexOptions<T> extends SimpleIndexOptions<T> {
 }
 
 /**
+ * This must be identical (with a few stricter fields) to IndexSpecification from mongodb, but without 'key' field. 
+ * It would be great it we could just extend that interface but without that field.
+ * 
  * Options passed to mongodb.createIndexes
  * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#createIndexes and http://docs.mongodb.org/manual/reference/command/createIndexes/
  */
@@ -26,10 +29,15 @@ export interface SimpleIndexOptions<T> {
   name?: string;
   background?: boolean;
   unique?: boolean;
+
+  // stricter
   partialFilterExpression?: FilterQuery<T>;
+
   sparse?: boolean;
   expireAfterSeconds?: number;
-  storageEngine?: { [storageEngineName: string]: string };
+  storageEngine?: object;
+
+  // stricter
   weights?: { [key in keyof T]?: number };
   default_language?: string;
   language_override?: string;
@@ -39,7 +47,7 @@ export interface SimpleIndexOptions<T> {
   min?: number;
   max?: number;
   bucketSize?: number;
-  collation?: Object;
+  collation?: CollationDocument;
 };
 
 function isNotPrimitive(targetType: ClassType<any>, propertyKey: string) {
@@ -77,7 +85,7 @@ export function id(target: any, propertyKey: string) {
   const targetType = Reflect.getMetadata('design:type', target, propertyKey);
   Reflect.defineMetadata('mongo:id', propertyKey, target);
 
-  Expose({ name: '_id'})(target, propertyKey);
+  Expose({ name: '_id' })(target, propertyKey);
 
   if (targetType === ObjectId) {
     Type(() => String)(target, propertyKey);
@@ -125,7 +133,7 @@ export function index<T = any>(type: number | string = 1, options: SimpleIndexOp
       throw new Error('@index decorator can only be applied to class properties');
     }
 
-    const indexOptions: IndexOptions<T> = {
+    const indexOptions: IndexSpecification = {
       name: propertyKey,
       ...options,
       key: { [propertyKey]: type } as any,

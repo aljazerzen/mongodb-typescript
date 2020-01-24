@@ -1,7 +1,15 @@
 import { plainToClass } from 'class-transformer';
-import { Collection as MongoCollection, Cursor, FilterQuery, MongoClient, ObjectId, ReplaceOneOptions } from 'mongodb';
+import {
+  Collection as MongoCollection,
+  Cursor,
+  FilterQuery,
+  IndexSpecification,
+  MongoClient,
+  ObjectId,
+  ReplaceOneOptions,
+} from 'mongodb';
 
-import { IndexOptions, Ref } from '.';
+import { Ref } from '.';
 
 export declare type ClassType<T> = {
   new(...args: any[]): T;
@@ -9,7 +17,7 @@ export declare type ClassType<T> = {
 
 export function dehydrate<T>(entity: T, idField?: string): Object {
   // const plain = classToPlain(entity) as any;
-  if(!entity)
+  if (!entity)
     return entity;
 
   const refs = Reflect.getMetadata('mongo:refs', entity) || {};
@@ -95,7 +103,7 @@ export class Repository<T> {
   }
 
   async createIndexes(forceBackground: boolean = false) {
-    const indexes: IndexOptions<T>[] = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
+    const indexes: IndexSpecification[] = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
 
     if (indexes.length == 0)
       return null;
@@ -127,7 +135,7 @@ export class Repository<T> {
       await this.update(entity);
   }
 
-  async findOne(query: FilterQuery<T> = {}): Promise<T | null> {
+  async findOne(query: FilterQuery<T | { _id: any }> = {}): Promise<T | null> {
     return this.hydrate(await this.collection.findOne<Object>(query));
   }
 
@@ -147,11 +155,11 @@ export class Repository<T> {
    * calls mongodb.find function and returns its cursor with attached map function that hydrates results
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
    */
-  find(query?: FilterQuery<T>): Cursor<T> {
+  find(query?: FilterQuery<T | { _id: any }>): Cursor<T> {
     return this.collection.find(query).map(doc => this.hydrate(doc) as T);
   }
 
-  async populate<S>(entity: S, refName: string) {
+  async populate<S extends object>(entity: S, refName: string) {
     const refs = Reflect.getMetadata('mongo:refs', entity) || {};
     const ref: Ref = refs[refName];
 
@@ -167,8 +175,8 @@ export class Repository<T> {
     }
   }
 
-  async populateMany<S>(entities: S[], refName: string) {
-    if(entities.length === 0)
+  async populateMany<S extends object>(entities: S[], refName: string) {
+    if (entities.length === 0)
       return;
     const refs = Reflect.getMetadata('mongo:refs', entities[0]) || {};
     const ref: Ref = refs[refName];
