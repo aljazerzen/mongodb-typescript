@@ -136,7 +136,7 @@ export class Repository<T> {
   }
 
   async findOne(query: FilterQuery<T | { _id: any }> = {}): Promise<T | null> {
-    return this.hydrate(await this.collection.findOne<Object>(query));
+    return this.hydrate(await this.collection.findOne<Object>(this.replaceIdFieldWithId(query)));
   }
 
   async findById(id: ObjectId): Promise<T | null> {
@@ -156,7 +156,7 @@ export class Repository<T> {
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
    */
   find(query?: FilterQuery<T | { _id: any }>): Cursor<T> {
-    return this.collection.find(query).map(doc => this.hydrate(doc) as T);
+    return this.collection.find(this.replaceIdFieldWithId(query)).map(doc => this.hydrate(doc) as T);
   }
 
   async populate<S extends object>(entity: S, refName: string) {
@@ -198,10 +198,53 @@ export class Repository<T> {
    * @returns integer
    */
   async count(query?: FilterQuery<T>) {
-    return this.collection.countDocuments(query);
+    return this.collection.countDocuments(this.replaceIdFieldWithId(query));
   }
 
   hydrate(plain: Object | null) {
     return plain ? plainToClass<T, Object>(this.Type, plain) : null;
+  }
+
+  /**
+   * From: https://stackoverflow.com/a/19752570/7414734.
+   * @param o The original object using a custom id field.
+   * @returns A cloned object with the custom id field renamed to _id.
+   */
+  private refitKeys(o: any): any {
+    let build: any, key: string, destKey: string, value: any;
+
+    build = {};
+    for (key in o) {
+      if (o.hasOwnProperty(key)) {
+        if (key === this.idField || key === "_id") {
+          build._id = o[key];
+        } else {
+        // get the value
+        value = o[key];
+
+        // if this is an object, recurse
+        if (typeof value === "object") {
+            value = this.refitKeys(value);
+        }
+
+        // set it on the result using the destination key
+        build[key] = value;
+        }
+      }
+    }
+    return build;
+}
+
+  /**
+   * @returns The same query it was given after a rename where keys that were named with the custom id field are now named _id.
+   * @param query The query using a custom field name.
+   */
+  private replaceIdFieldWithId(query?: FilterQuery<T | { _id: any }>): FilterQuery<T | { _id: any }> {
+    if (query) {
+      const refitted = this.refitKeys(query);
+      console.log("refitted", refitted);
+      return refitted;
+    }
+    return query as unknown as FilterQuery<T | { _id: any }>;
   }
 }

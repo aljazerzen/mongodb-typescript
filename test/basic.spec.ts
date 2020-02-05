@@ -30,9 +30,21 @@ describe('basic', () => {
 
   let userRepo: UserRepo;
 
+  class UserWithCustomId {
+    @id name: ObjectId;
+    age: number;
+
+    hello() {
+      return `Hello, my name is ${this.name.toHexString()} and I am ${this.age} years old`;
+    }
+  }
+
+  let userWithCustomIdRepo: Repository<UserWithCustomId>;
+
   beforeAll(async () => {
     await clean(client);
     userRepo = new UserRepo(User, client, 'users');
+    userWithCustomIdRepo = new Repository<UserWithCustomId>(UserWithCustomId, client, 'userWithCustomIds');
   });
 
   test('insert and findOne', async () => {
@@ -45,6 +57,17 @@ describe('basic', () => {
 
     expect(saved).toHaveProperty('name', 'tom');
     expect(saved).toHaveProperty('id');
+  });
+
+  test('findOne using custom id field', async () => {
+    const user = new UserWithCustomId();
+    user.age = 15;
+    await userWithCustomIdRepo.insert(user);
+
+    const saved = await userWithCustomIdRepo.findOne({ name: user.name });
+
+    expect(saved).toHaveProperty('name', user.name);
+    expect(saved).toHaveProperty('age', 15);
   });
 
   test('update', async () => {
