@@ -239,7 +239,7 @@ export class Repository<T> {
    * @returns The same query it was given after a rename where keys that were named with the custom id field are now named _id.
    * @param query The query using a custom field name.
    */
-  private replaceIdFieldWithId(query?: FilterQuery<T | { _id: any }>): FilterQuery<T | { _id: any }> {
+  protected replaceIdFieldWithId(query?: FilterQuery<T | { _id: any }>): FilterQuery<T | { _id: any }> {
     if (query) {
       const refitted = this.refitKeys(query);
       console.log("refitted", refitted);
