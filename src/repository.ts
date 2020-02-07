@@ -211,16 +211,14 @@ export class Repository<T> {
    * @returns A cloned object with the custom id field renamed to _id.
    */
   private refitKeys(o: any): any {
-    let build: any, key: string, destKey: string, value: any;
-
-    build = {};
-    for (key in o) {
+    const build: any = {};
+    for (const key in o) {
       if (o.hasOwnProperty(key)) {
         if (key === this.idField || key === "_id") {
           build._id = o[key];
         } else {
         // get the value
-        value = o[key];
+        let value = o[key];
 
         // if this is an object, recurse
         if (typeof value === "object") {
@@ -242,7 +240,6 @@ export class Repository<T> {
   private replaceIdFieldWithId(query?: FilterQuery<T | { _id: any }>): FilterQuery<T | { _id: any }> {
     if (query) {
       const refitted = this.refitKeys(query);
-      console.log("refitted", refitted);
       return refitted;
     }
     return query as unknown as FilterQuery<T | { _id: any }>;
