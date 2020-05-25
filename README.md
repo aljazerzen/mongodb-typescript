@@ -27,6 +27,8 @@ This package is trying to be as non-restrictive as possible and to let the devel
 $ npm install mongodb-typescript
 ```
 
+Make sure to enable `emitDecoratorMetadata` and `experimentalDecorators` in [tsconfig.json](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
+
 ## Quick start
 
 ```typescript
