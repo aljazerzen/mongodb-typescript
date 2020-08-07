@@ -20,7 +20,7 @@
   "license": "ISC",
   "repository": "https://github.com/aljazerzen/mongodb-typescript.git",
   "dependencies": {
-    "class-transformer": "^0.1.9"
+    "class-transformer": "^0.3.1"
   },
   "peerDependencies": {
     "mongodb": "^3.4.1",
