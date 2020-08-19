@@ -1,6 +1,6 @@
 import { MongoClient, ObjectId } from 'mongodb';
 
-import { id, nested, Repository } from '../src';
+import { id, ignore, nested, ref, Repository } from '../src';
 import { clean, close, connect } from './_mongo';
 
 class Settings {
@@ -8,8 +8,17 @@ class Settings {
   articlesPerPage: number;
 }
 
+class Category {
+  @id id: ObjectId;
+  name: string;
+}
+
 class Article {
   title: string;
+
+  @ignore ignoredField: string;
+
+  @ref() category: Category;
 }
 
 class User {
@@ -26,10 +35,12 @@ class User {
 
 let client: MongoClient;
 let userRepo: Repository<User>;
+let categoryRepo: Repository<Category>;
 
 beforeAll(async () => {
   client = await connect();
   userRepo = new Repository<User>(User, client, 'users');
+  categoryRepo = new Repository<Category>(Category, client, 'categories');
 });
 
 describe('nested objects', () => {
@@ -90,6 +101,52 @@ describe('nested objects', () => {
     expect(saved.articles).toHaveLength(2);
     expect(saved.articles[0]).toBeNull();
     expect(saved.articles[1]).toBeNull();
+  });
+
+  test('nested ignored properties', async () => {
+    const article = new Article();
+    article.title = 'How to sleep at night';
+    article.ignoredField = 'blah';
+    
+    const user = new User();
+    user.name = 'james';
+    user.articles = [article];
+    await userRepo.insert(user);
+
+    const saved = await userRepo.findById(user.id);
+
+    expect(saved).toHaveProperty('articles');
+    expect(saved.articles).toHaveLength(1);
+    expect(saved.articles[0].title).toEqual(article.title);
+    expect(saved.articles[0]).not.toHaveProperty('ignoredField');
+  });
+
+  test('nested referenced entities', async () => {
+    const category = new Category();
+    category.name = 'Lifestyle';
+    
+    await categoryRepo.save(category);
+
+    
+    const article = new Article();
+    article.title = 'How to sleep at night';
+    article.category = category;
+    
+    const user = new User();
+    user.name = 'tommy';
+    user.articles = [article];
+    await userRepo.insert(user);
+
+    expect(user.articles).toHaveLength(1);
+    expect(user.articles[0]).toHaveProperty('categoryId');
+    expect(user.articles[0].category).toHaveProperty('id', category.id);
+
+    const saved = await userRepo.findById(user.id);
+
+    expect(saved).toHaveProperty('articles');
+    expect(saved.articles).toHaveLength(1);
+    expect(saved.articles[0]).toHaveProperty('categoryId');
+    expect(saved.articles[0]).not.toHaveProperty('category');
   });
 });
 
