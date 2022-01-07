@@ -127,7 +127,7 @@ describe('basic', () => {
 
     const saved = await userRepo.findOne();
     await userRepo.remove(saved);
-    
+
     const newCount = await userRepo.count();
     expect(newCount).toBe(count - 1);
   });
@@ -207,14 +207,12 @@ describe('indexes', () => {
     await catRepo.save(cat);
 
     const res = await catRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+    expect(res.length).toEqual(1);
   });
 
   test('do not re-add existing index', async () => {
     const res = await catRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore);
+    expect(res.length).toEqual(1);
   });
 
   test('location index', async () => {
@@ -249,8 +247,7 @@ describe('indexes', () => {
 
     // create unique compound index
     const res = await houseCatRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+    expect(res.length).toEqual(1);
 
     await expect((async () => {
       const anotherHouseCat = new HouseCat();
