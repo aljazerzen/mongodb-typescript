@@ -2,6 +2,9 @@ import { plainToClass } from 'class-transformer';
 import {
   Collection as MongoCollection,
   Filter,
+  FindOneAndUpdateOptions,
+  FindOneAndDeleteOptions,
+  UpdateFilter,
   IndexDescription,
   FindCursor,
   MongoClient,
@@ -82,7 +85,7 @@ export interface RepositoryOptions {
 
 export class Repository<T> {
 
-  private readonly collection: MongoCollection;
+  protected readonly collection: MongoCollection;
 
   /**
    * Underlying mongodb collection (use with caution)
@@ -148,6 +151,16 @@ export class Repository<T> {
 
   async findManyById(ids: ObjectId[]): Promise<T[]> {
     return this.find({ _id: { $in: ids } }).toArray();
+  }
+
+  async findOneAndUpdate(filter: Filter<any> = {}, update: UpdateFilter<any>, options: FindOneAndUpdateOptions = {}): Promise<T | null> {
+    const result = await this.collection.findOneAndUpdate(filter,update, options );
+    return this.hydrate(result.value)
+}
+
+  async findOneAndDelete(filter: Filter<any> = {}, options: FindOneAndDeleteOptions = {}): Promise<T | null> {
+    const result = await this.collection.findOneAndDelete(filter, options );
+    return this.hydrate(result.value)
   }
 
   async remove(entity: T): Promise<void> {

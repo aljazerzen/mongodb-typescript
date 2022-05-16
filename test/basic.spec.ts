@@ -132,6 +132,42 @@ describe('basic', () => {
     expect(newCount).toBe(count - 1);
   });
 
+  test('Find and Update', async () => {
+    const user = new User();
+    user.name = 'Katy';
+    user.age = 21;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    const res = await userRepo.findOneAndUpdate({_id: user.id}, {$inc: {age: 1}}, {returnDocument: 'after'})
+
+    expect(res.age).toBe(22);
+  });
+
+  test('Find and Update', async () => {
+    const user = new User();
+    user.name = 'Katy2';
+    user.age = 21;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    const res = await userRepo.findOneAndUpdate({_id: user.id}, {$set: {age: 33}}, {returnDocument: 'after'})
+
+    expect(res.age).toBe(33);
+  });
+
+  test('Find and Delete', async () => {
+    const user = new User();
+    user.name = 'Katy3';
+    user.age = 15;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    await userRepo.findOneAndDelete({_id: user.id})
+    const res = await userRepo.findById(user.id);
+
+    expect(res).toBe(null);
+  });
 });
 
 describe('default values', () => {
