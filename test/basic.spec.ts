@@ -127,11 +127,47 @@ describe('basic', () => {
 
     const saved = await userRepo.findOne();
     await userRepo.remove(saved);
-    
+
     const newCount = await userRepo.count();
     expect(newCount).toBe(count - 1);
   });
 
+  test('Find and Update', async () => {
+    const user = new User();
+    user.name = 'Katy';
+    user.age = 21;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    const res = await userRepo.findOneAndUpdate({_id: user.id}, {$inc: {age: 1}}, {returnDocument: 'after'})
+
+    expect(res.age).toBe(22);
+  });
+
+  test('Find and Update', async () => {
+    const user = new User();
+    user.name = 'Katy2';
+    user.age = 21;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    const res = await userRepo.findOneAndUpdate({_id: user.id}, {$set: {age: 33}}, {returnDocument: 'after'})
+
+    expect(res.age).toBe(33);
+  });
+
+  test('Find and Delete', async () => {
+    const user = new User();
+    user.name = 'Katy3';
+    user.age = 15;
+    user.someIds = [new ObjectId(), new ObjectId()];
+
+    await userRepo.save(user);
+    await userRepo.findOneAndDelete({_id: user.id})
+    const res = await userRepo.findById(user.id);
+
+    expect(res).toBe(null);
+  });
 });
 
 describe('default values', () => {
@@ -207,14 +243,12 @@ describe('indexes', () => {
     await catRepo.save(cat);
 
     const res = await catRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+    expect(res.length).toEqual(1);
   });
 
   test('do not re-add existing index', async () => {
     const res = await catRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore);
+    expect(res.length).toEqual(1);
   });
 
   test('location index', async () => {
@@ -249,8 +283,7 @@ describe('indexes', () => {
 
     // create unique compound index
     const res = await houseCatRepo.createIndexes();
-    expect(res).toHaveProperty('numIndexesBefore');
-    expect(res).toHaveProperty('numIndexesAfter', res.numIndexesBefore + 1);
+    expect(res.length).toEqual(1);
 
     await expect((async () => {
       const anotherHouseCat = new HouseCat();

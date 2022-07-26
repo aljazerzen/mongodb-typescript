@@ -1,12 +1,16 @@
 import { plainToClass } from 'class-transformer';
 import {
   Collection as MongoCollection,
-  Cursor,
-  FilterQuery,
-  IndexSpecification,
+  Filter,
+  FindOneAndUpdateOptions,
+  FindOneAndDeleteOptions,
+  UpdateFilter,
+  IndexDescription,
+  FindCursor,
   MongoClient,
+  ReplaceOptions,
   ObjectId,
-  ReplaceOneOptions,
+  WithId,
 } from 'mongodb';
 
 import { Ref } from '.';
@@ -14,6 +18,7 @@ import { Ref } from '.';
 export declare type ClassType<T> = {
   new(...args: any[]): T;
 };
+
 
 export function dehydrate<T>(entity: T, idField?: string): Object {
   // const plain = classToPlain(entity) as any;
@@ -72,7 +77,7 @@ export interface RepositoryOptions {
 
   /**
    * database name passed to MongoClient.db
-   * 
+   *
    * overrides database name in connection string
    */
   databaseName?: string;
@@ -80,7 +85,7 @@ export interface RepositoryOptions {
 
 export class Repository<T> {
 
-  private readonly collection: MongoCollection;
+  protected readonly collection: MongoCollection;
 
   /**
    * Underlying mongodb collection (use with caution)
@@ -90,7 +95,7 @@ export class Repository<T> {
     return this.collection;
   }
 
-  private idField: string;
+  private readonly idField: string;
 
   constructor(protected Type: ClassType<T>, mongo: MongoClient, collection: string, options: RepositoryOptions = {}) {
     this.collection = mongo.db(options.databaseName).collection(collection);
@@ -103,7 +108,7 @@ export class Repository<T> {
   }
 
   async createIndexes(forceBackground: boolean = false) {
-    const indexes: IndexSpecification[] = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
+    const indexes: IndexDescription[] = Reflect.getMetadata('mongo:indexes', this.Type.prototype) || [];
 
     if (indexes.length == 0)
       return null;
@@ -123,7 +128,7 @@ export class Repository<T> {
     (entity as any)[this.idField] = res.insertedId;
   }
 
-  async update(entity: T, options: ReplaceOneOptions = {}) {
+  async update(entity: T, options: ReplaceOptions = {}) {
     const plain = dehydrate<T>(entity, this.idField);
     await this.collection.replaceOne({ _id: (entity as any)[this.idField] }, plain, options);
   }
@@ -135,8 +140,9 @@ export class Repository<T> {
       await this.update(entity);
   }
 
-  async findOne(query: FilterQuery<T | { _id: any }> = {}): Promise<T | null> {
-    return this.hydrate(await this.collection.findOne<Object>(query));
+  async findOne(filter: Filter<any> = {}): Promise<T | null> {
+    const result = await this.collection.findOne(filter);
+    return this.hydrate(result);
   }
 
   async findById(id: ObjectId): Promise<T | null> {
@@ -147,6 +153,16 @@ export class Repository<T> {
     return this.find({ _id: { $in: ids } }).toArray();
   }
 
+  async findOneAndUpdate(filter: Filter<any> = {}, update: UpdateFilter<any>, options: FindOneAndUpdateOptions = {}): Promise<T | null> {
+    const result = await this.collection.findOneAndUpdate(filter,update, options );
+    return this.hydrate(result.value)
+}
+
+  async findOneAndDelete(filter: Filter<any> = {}, options: FindOneAndDeleteOptions = {}): Promise<T | null> {
+    const result = await this.collection.findOneAndDelete(filter, options );
+    return this.hydrate(result.value)
+  }
+
   async remove(entity: T): Promise<void> {
     await this.c.deleteOne({ _id: (entity as any)[this.idField] });
   }
@@ -155,8 +171,8 @@ export class Repository<T> {
    * calls mongodb.find function and returns its cursor with attached map function that hydrates results
    * mongodb.find: http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#find
    */
-  find(query?: FilterQuery<T | { _id: any }>): Cursor<T> {
-    return this.collection.find(query).map(doc => this.hydrate(doc) as T);
+  find(filter: Filter<any>): FindCursor<T> {
+    return this.collection.find(filter).map(doc => this.hydrate(doc) as T);
   }
 
   async populate<S extends object>(entity: S, refName: string) {
@@ -194,11 +210,15 @@ export class Repository<T> {
    * Gets the number of documents matching the filter.
    * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#estimatedDocumentCount
    * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#countDocuments
-   * @param estimate whether estimatedDocumentCount or countDocuments will be called.
+   * @param filter whether estimatedDocumentCount or countDocuments will be called.
    * @returns integer
    */
-  async count(query?: FilterQuery<T>) {
-    return this.collection.countDocuments(query);
+  async count(filter?: Filter<WithId<any>>) {
+    if(filter){
+      return this.collection.countDocuments(filter);
+    }
+
+      return this.collection.countDocuments();
   }
 
   hydrate(plain: Object | null) {

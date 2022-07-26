@@ -1,13 +1,13 @@
 import 'reflect-metadata';
 
-import { Expose, Transform, Type, TypeOptions } from 'class-transformer';
-import { CollationDocument, FilterQuery, IndexSpecification, ObjectId } from 'mongodb';
+import { Expose, Transform, Type, TypeHelpOptions } from 'class-transformer';
+import { CollationOptions, Document, IndexDescription, ObjectId} from 'mongodb';
 
 import { ClassType } from './repository';
 
 export * from './repository';
 
-export type TypeFunction = (type?: TypeOptions) => ClassType<any>;
+export type TypeFunction = (type?: TypeHelpOptions) => ClassType<any>;
 
 /**
  * Options passed to mongodb.createIndexes
@@ -19,9 +19,9 @@ export interface IndexOptions<T> extends SimpleIndexOptions<T> {
 }
 
 /**
- * This must be identical (with a few stricter fields) to IndexSpecification from mongodb, but without 'key' field. 
+ * This must be identical (with a few stricter fields) to IndexSpecification from mongodb, but without 'key' field.
  * It would be great it we could just extend that interface but without that field.
- * 
+ *
  * Options passed to mongodb.createIndexes
  * http://mongodb.github.io/node-mongodb-native/3.1/api/Collection.html#createIndexes and http://docs.mongodb.org/manual/reference/command/createIndexes/
  */
@@ -31,7 +31,7 @@ export interface SimpleIndexOptions<T> {
   unique?: boolean;
 
   // stricter
-  partialFilterExpression?: FilterQuery<T>;
+  partialFilterExpression?: Document;
 
   sparse?: boolean;
   expireAfterSeconds?: number;
@@ -47,8 +47,8 @@ export interface SimpleIndexOptions<T> {
   min?: number;
   max?: number;
   bucketSize?: number;
-  collation?: CollationDocument;
-};
+  collation?: CollationOptions;
+}
 
 function isNotPrimitive(targetType: ClassType<any>, propertyKey: string) {
   if (targetType === ObjectId || targetType === String || targetType === Number || targetType === Boolean) {
@@ -72,10 +72,10 @@ export function objectId(target: any, propertyKey: string) {
 
   if (targetType === ObjectId) {
     Type(() => String)(target, propertyKey);
-    Transform(val => new ObjectId(val))(target, propertyKey);
+    Transform(val => new ObjectId(val.value))(target, propertyKey);
   } else if (targetType === Array) {
     Type(() => String)(target, propertyKey);
-    Transform(val => val.map((v: any) => new ObjectId(v)))(target, propertyKey);
+    Transform(val => val.value.map((v: any) => new ObjectId(v)))(target, propertyKey);
   } else {
     throw Error('@objectId can only be used on properties of type ObjectId or ObjectId[]');
   }
@@ -133,7 +133,7 @@ export function index<T = any>(type: number | string = 1, options: SimpleIndexOp
       throw new Error('@index decorator can only be applied to class properties');
     }
 
-    const indexOptions: IndexSpecification = {
+    const indexOptions: IndexDescription = {
       name: propertyKey,
       ...options,
       key: { [propertyKey]: type } as any,
