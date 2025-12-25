@@ -327,79 +327,214 @@ Different repositories may reference collections in different databases at diffe
 | mongoClient | MongoClient | mongo client to use for all requests |
 | collection | string | name of collection to reference |
 
+```ts
+const userRepo = new Repository<User>(User, mongoClient, 'users');
+```
+
+---
+
 #### c
 
-`mongodb` collection used to make all the requests to the database.
+`mongodb` collection used to make all the requests to the database.  
 Can be used to access all features of mongodb, but returns non-hydrated (plain) objects.
+
+```ts
+const raw = await userRepo.c.findOne({ name: 'tom' });
+```
+
+---
 
 #### count
 
-*TODO*
-
-#### createIndexes
-
-*TODO*
-
-#### insert
-
-*TODO*
-
-#### update
+Gets number of documents matching the filter.
 
 | parameter | type | |
 | --- | --- | --- |
-| entity | Object<T> | Entity to update, must be of type T |
-| options | ReplaceOneOptions | Options to pass to the underlying replaceOne call |
+| filter | Filter | Optional mongodb filter |
 
 ```ts
-await userRepo.update(post);
-await userRepo.update(post, { upsert: true });
+const total = await userRepo.count();
+const adults = await userRepo.count({ age: { $gte: 18 } });
 ```
+
+---
+
+#### createIndexes
+
+Creates all indexes defined using `@index` and `@indexes` decorators on entity.
+
+| parameter | type | |
+| --- | --- | --- |
+| forceBackground | boolean | Forces background index creation |
+
+```ts
+await userRepo.createIndexes();
+await userRepo.createIndexes(true);
+```
+
+---
+
+#### insert
+
+Inserts a new entity into database and assigns generated `_id` back to entity.
+
+| parameter | type | |
+| --- | --- | --- |
+| entity | T | Entity to insert |
+
+```ts
+const user = new User();
+user.name = 'tom';
+
+await userRepo.insert(user);
+
+// user.id is now populated
+```
+
+---
+
+#### update
+
+Replaces an existing entity in database.
+
+| parameter | type | |
+| --- | --- | --- |
+| entity | T | Entity to update |
+| options | ReplaceOptions | Options passed to `replaceOne` |
+
+```ts
+await userRepo.update(user);
+await userRepo.update(user, { upsert: true });
+```
+
+---
 
 #### save
 
-*TODO*
+Inserts or updates entity depending on presence of id.
+
+```ts
+await userRepo.save(user);
+```
+
+---
 
 #### findOne
 
-*TODO*
+Finds a single document and returns hydrated entity.
+
+| parameter | type | |
+| --- | --- | --- |
+| filter | Filter | mongodb filter |
+
+```ts
+const user = await userRepo.findOne({ name: 'tom' });
+```
+
+---
 
 #### findById
 
-*TODO*
+Finds entity by its id.
+
+| parameter | type | |
+| --- | --- | --- |
+| id | ObjectId | Entity id |
+
+```ts
+const user = await userRepo.findById(userId);
+```
+
+---
 
 #### findManyById
 
-*TODO*
+Finds multiple entities by their ids.
+
+| parameter | type | |
+| --- | --- | --- |
+| ids | ObjectId[] | Array of ids |
+
+```ts
+const users = await userRepo.findManyById([id1, id2]);
+```
+
+---
 
 #### find
 
-*TODO*
+Returns mongodb cursor that hydrates entities automatically.
+
+| parameter | type | |
+| --- | --- | --- |
+| filter | Filter | mongodb filter |
+
+```ts
+const cursor = userRepo.find({ age: { $gte: 18 } });
+
+const users = await cursor.toArray();
+```
+
+---
 
 #### populate
 
-*TODO*
+Populates a reference field on a single entity.
+
+Works for both single and array references.
+
+| parameter | type | |
+| --- | --- | --- |
+| entity | object | Entity instance |
+| refName | string | Name of reference field |
 
 ```ts
 await userRepo.populate(post, 'author');
+await userRepo.populate(post, 'pinnedBy');
 ```
+
+---
 
 #### populateMany
 
-*TODO*
+Populates a reference field on multiple entities in a single batch query.
+
+This is more efficient than calling `populate` in a loop.
+
+| parameter | type | |
+| --- | --- | --- |
+| entities | object[] | Array of entities |
+| refName | string | Name of reference field |
+
+```ts
+await userRepo.populateMany(posts, 'author');
+await userRepo.populateMany(comments, 'commentator');
+```
+
+---
 
 #### hydrate
 
-Converts a plain object from database into typed entity with functions, typed nested entities and correctly named _id field.
+Converts a plain object from database into typed entity with functions, typed nested entities and correctly named `_id` field.
 
 Use this function when fetching documents via vanilla `mongodb` collection.
 
+```ts
+const raw = await userRepo.c.findOne({});
+const entity = userRepo.hydrate(raw);
+```
+
+---
+
 #### dehydrate
 
-Returns plain object that can be saved to database.
-It handles custom _id names and dereferences objects (removes referenced objects and sets referencing keys).
+Returns plain object that can be saved to database.  
+Handles custom `_id` names, nested entities and dereferencing of referenced objects.
 
 > This is a standalone function and does not require associated repository.
 
+```ts
+const plain = dehydrate(entity);
+```
 
 *Inspired by [Typegoose](https://www.npmjs.com/package/typegoose) and [TypeORM](http://typeorm.io)*
