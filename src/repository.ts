@@ -23,7 +23,7 @@ export declare type ClassType<T> = {
 export function dehydrate<T>(entity: T, idField?: string): Object {
   // const plain = classToPlain(entity) as any;
   if (!entity)
-    return entity;
+    return entity as Object;
 
   const refs = Reflect.getMetadata('mongo:refs', entity) || {};
 
@@ -192,19 +192,41 @@ export class Repository<T> {
   }
 
   async populateMany<S extends object>(entities: S[], refName: string) {
-    if (entities.length === 0)
-      return;
+    if (entities.length === 0) return;
+
     const refs = Reflect.getMetadata('mongo:refs', entities[0]) || {};
     const ref: Ref = refs[refName];
 
-    // if (ref.typeFunction().prototype !== this.Type.prototype)
-    // throw new Error(`incompatible repository: expected ${ref.typeFunction().name}, got ${this.Type.name}`);
+    const ids = entities
+        .map((entity: any) => entity[ref.id])
+        .flat()
+        .filter(Boolean);
 
-    const referenced = await this.findManyById(entities.map((entity: any) => entity[ref.id] as ObjectId));
-    for (let entity of entities) {
-      (entity as any)[refName] = referenced.find(r => (r as any)[this.idField].equals((entity as any)[ref.id]));
+    if (ids.length === 0) return;
+
+    const referenced = await this.findManyById(ids);
+
+    // reference ids in Map for fast lookup
+    const byId = new Map<string, any>();
+    for (const r of referenced) {
+        byId.set((r as any)[this.idField].toString(), r);
+    }
+
+    for (const entity of entities) {
+        const refValue = (entity as any)[ref.id];
+
+        if (ref.array) {
+            // map values in the array
+            (entity as any)[refName] = refValue
+                .map((id: ObjectId) => byId.get(id.toString()))
+                .filter(Boolean);
+        } else {
+            (entity as any)[refName] =
+                byId.get(refValue?.toString()) ?? null;
+        }
     }
   }
+
 
   /**
    * Gets the number of documents matching the filter.

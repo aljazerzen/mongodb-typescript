@@ -113,6 +113,43 @@ describe('referenced objects', () => {
     await userRepo.populateMany([], 'commentator');
   });
 
+  test('populateMany on array reference field', async () => {
+
+    const page1 = new Page();
+    page1.text = 'pinned';
+    page1.author = user1;
+    page1.pinnedBy = [user1, user2];
+
+    const page2 = new Page();
+    page2.text = 'pinned';
+    page2.author = user2;
+    page2.pinnedBy = [user2, user3];
+
+    await pageRepo.save(page1);
+    await pageRepo.save(page2);
+
+    const pages = await pageRepo.find({ text: "pinned" }).toArray();
+
+    // sanity check: refs are not populated
+    for (const page of pages) {
+      expect(page).not.toHaveProperty('pinnedBy');
+      expect((page as any).pinnedByIds).toBeDefined();
+    }
+
+    await userRepo.populateMany(pages, 'pinnedBy');
+
+    for (const page of pages) {
+      expect(page).toHaveProperty('pinnedBy');
+      expect(Array.isArray(page.pinnedBy)).toBe(true);
+      expect(page.pinnedBy.length).toBeGreaterThan(0);
+
+      for (const user of page.pinnedBy) {
+        expect(user).toBeInstanceOf(User);
+        expect(user.id).toBeDefined();
+      }
+    }
+  });
+
   test('reference many', async () => {
     let page = new Page();
     page.text = 'this is a another sub page!';
